@@ -1,0 +1,388 @@
+<!-- ===================================== -->
+<!-- mapping-dashboard.html -->
+<!-- REPLACE ENTIRE FILE -->
+<!-- ===================================== -->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <title>Integration Mapping Dashboard</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <style>
+
+        body {
+            background: #f4f6f9;
+            padding: 30px;
+            font-family: Arial;
+        }
+
+        .table-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="table-box">
+
+    <h2 class="mb-4">
+
+        Integration Mapping Dashboard
+
+    </h2>
+
+    <!-- SEARCH + FILTER -->
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+
+            <input type="text"
+                   id="searchInput"
+                   class="form-control"
+                   placeholder="Search">
+
+        </div>
+
+        <div class="col-md-3">
+
+            <select id="flowFilter"
+                    class="form-select">
+
+                <option value="">All Flows</option>
+
+                <option value="SO">SO</option>
+
+                <option value="PO">PO</option>
+
+            </select>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <button class="btn btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createModal">
+
+                Add Mapping
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- TABLE -->
+
+    <table class="table table-bordered table-hover"
+           id="mappingTable">
+
+        <thead class="table-dark">
+
+        <tr>
+
+            <th>S.No</th>
+            <th>Flow Type</th>
+            <th>External Instance</th>
+            <th>Openbravo Table</th>
+            <th>Openbravo Record ID</th>
+            <th>External Entity</th>
+            <th>External Record ID</th>
+            <th>Actions</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        <tr th:each="record, recordStat : ${records}">
+
+            <td th:text="${recordStat.count}"></td>
+
+            <td th:text="${record.flowType}"></td>
+
+            <td th:text="${record.externalInstance}"></td>
+
+            <td th:text="${record.openbravoTable}"></td>
+
+            <td th:text="${record.openbravoRecordId}"></td>
+
+            <td th:text="${record.externalEntity}"></td>
+
+            <td th:text="${record.externalRecordId}"></td>
+
+            <td>
+
+                <!-- EDIT -->
+
+                <button class="btn btn-primary btn-sm"
+                        data-bs-toggle="modal"
+                        th:attr="data-bs-target='#editModal' + ${record.id}">
+
+                    Edit
+
+                </button>
+
+                <!-- DELETE -->
+
+                <form action="/mappings/delete"
+                      method="post"
+                      style="display:inline;">
+
+                    <input type="hidden"
+                           name="id"
+                           th:value="${record.id}">
+
+                    <button class="btn btn-danger btn-sm">
+
+                        Delete
+
+                    </button>
+
+                </form>
+
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- ===================================== -->
+<!-- CREATE MODAL -->
+<!-- ===================================== -->
+
+<div class="modal fade"
+     id="createModal">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form action="/mappings/create"
+                  method="post">
+
+                <div class="modal-header">
+
+                    <h5>Create Mapping</h5>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="text"
+                           name="flowType"
+                           class="form-control mb-2"
+                           placeholder="Flow Type">
+
+                    <input type="text"
+                           name="externalInstance"
+                           class="form-control mb-2"
+                           placeholder="External Instance">
+
+                    <input type="text"
+                           name="openbravoTable"
+                           class="form-control mb-2"
+                           placeholder="Openbravo Table">
+
+                    <input type="text"
+                           name="openbravoRecordId"
+                           class="form-control mb-2"
+                           placeholder="Openbravo Record ID">
+
+                    <input type="text"
+                           name="externalEntity"
+                           class="form-control mb-2"
+                           placeholder="External Entity">
+
+                    <input type="text"
+                           name="externalRecordId"
+                           class="form-control mb-2"
+                           placeholder="External Record ID">
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button class="btn btn-success"
+                            type="submit">
+
+                        Save
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===================================== -->
+<!-- EDIT MODALS -->
+<!-- ===================================== -->
+
+<div th:each="record : ${records}">
+
+    <div class="modal fade"
+         th:id="'editModal' + ${record.id}">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <form action="/mappings/update"
+                      method="post">
+
+                    <div class="modal-header">
+
+                        <h5>Edit Mapping</h5>
+
+                    </div>
+
+                    <div class="modal-body">
+
+                        <input type="hidden"
+                               name="id"
+                               th:value="${record.id}">
+
+                        <input type="text"
+                               name="flowType"
+                               class="form-control mb-2"
+                               th:value="${record.flowType}">
+
+                        <input type="text"
+                               name="externalInstance"
+                               class="form-control mb-2"
+                               th:value="${record.externalInstance}">
+
+                        <input type="text"
+                               name="openbravoTable"
+                               class="form-control mb-2"
+                               th:value="${record.openbravoTable}">
+
+                        <input type="text"
+                               name="openbravoRecordId"
+                               class="form-control mb-2"
+                               th:value="${record.openbravoRecordId}">
+
+                        <input type="text"
+                               name="externalEntity"
+                               class="form-control mb-2"
+                               th:value="${record.externalEntity}">
+
+                        <input type="text"
+                               name="externalRecordId"
+                               class="form-control mb-2"
+                               th:value="${record.externalRecordId}">
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button class="btn btn-primary"
+                                type="submit">
+
+                            Update
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===================================== -->
+<!-- FILTER SCRIPT -->
+<!-- ===================================== -->
+
+<script>
+
+    const searchInput =
+        document.getElementById("searchInput");
+
+    const flowFilter =
+        document.getElementById("flowFilter");
+
+    searchInput.addEventListener(
+        "keyup",
+        filterTable
+    );
+
+    flowFilter.addEventListener(
+        "change",
+        filterTable
+    );
+
+    function filterTable() {
+
+        const search =
+            searchInput.value.toLowerCase();
+
+        const flow =
+            flowFilter.value.toLowerCase();
+
+        const rows =
+            document.querySelectorAll(
+                "#mappingTable tbody tr"
+            );
+
+        rows.forEach(row => {
+
+            const text =
+                row.innerText.toLowerCase();
+
+            const flowText =
+                row.cells[1]
+                    .innerText
+                    .toLowerCase();
+
+            const matchSearch =
+                text.includes(search);
+
+            const matchFlow =
+                flow === "" ||
+                flowText.includes(flow);
+
+            row.style.display =
+                matchSearch && matchFlow
+                    ? ""
+                    : "none";
+        });
+    }
+
+</script>
+
+</body>
+
+</html>
