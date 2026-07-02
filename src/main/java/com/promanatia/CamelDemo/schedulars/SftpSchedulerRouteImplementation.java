@@ -50,7 +50,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                 .setBody(exchangeProperty("mappedCsv"))
 
                 .setHeader("CamelAwsS3Key",
-                        simple("DEV/TYU_${date:now:yyyyMMddHHmmss}.csv"))
+                        simple("Test/SalesOrder_${date:now:yyyyMMddHHmmss}.csv"))
 
                 .to("aws2-s3://{{aws.bucket.name}}"
                         + "?accessKey=RAW({{aws.access.key}})"
