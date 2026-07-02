@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.service;
 
-import com.promanatia.CamelDemo.DTO.MappingRecord;
+import com.promanatia.CamelDemo.DTO.MappingRecordEntity;
 import com.promanatia.CamelDemo.repository.MappingRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,17 +17,17 @@ public class MappingService {
         this.repository = repository;
     }
 
-    public List<MappingRecord> getAll() {
+    public List<MappingRecordEntity> getAll() {
 
         return repository.findAll();
     }
 
-    public void save(MappingRecord record) {
+    public void save(MappingRecordEntity record) {
 
         repository.save(record);
     }
 
-    public MappingRecord getById(Long id) {
+    public MappingRecordEntity getById(Long id) {
 
         return repository.findById(id)
                 .orElseThrow();

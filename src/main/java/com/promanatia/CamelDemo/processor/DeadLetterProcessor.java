@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.processor;
 
-import com.promanatia.CamelDemo.DTO.LogRecord;
+import com.promanatia.CamelDemo.DTO.LogRecordEntity;
 import com.promanatia.CamelDemo.service.DeadLetterService;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -40,7 +40,7 @@ public class DeadLetterProcessor implements Processor {
         String dateTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        LogRecord record = new LogRecord(
+        LogRecordEntity record = new LogRecordEntity(
                 dateTime,
                 orderNo,
                 level,

@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.controller;
 
-import com.promanatia.CamelDemo.DTO.MappingRecord;
+import com.promanatia.CamelDemo.DTO.MappingRecordEntity;
 import com.promanatia.CamelDemo.service.MappingService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,8 +44,7 @@ public class MappingController {
             @RequestParam String externalRecordId
     ) {
 
-        MappingRecord record =
-                new MappingRecord();
+        MappingRecordEntity record = new MappingRecordEntity();
 
         record.setFlowType(flowType);
 
@@ -92,7 +91,7 @@ public class MappingController {
             @RequestParam String externalRecordId
     ) {
 
-        MappingRecord record =
+        MappingRecordEntity record =
                 mappingService.getById(id);
 
         record.setFlowType(flowType);

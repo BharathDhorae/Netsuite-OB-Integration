@@ -1,5 +1,5 @@
 package com.promanatia.CamelDemo.CamleInfo;
-import com.promanatia.CamelDemo.DTO.Order;
+import com.promanatia.CamelDemo.DTO.OrderEntity;
 import com.promanatia.CamelDemo.processor.DeadLetterProcessor;
 import com.promanatia.CamelDemo.processor.OrderValidationProcessor;
 import org.apache.camel.builder.RouteBuilder;
@@ -27,7 +27,7 @@ public class OrderRoute extends RouteBuilder {
                 .marshal().json() .setHeader("LOG_LEVEL", constant("INFO"))
                 .setHeader("LOG_MESSAGE", constant("Order Received"))
                 .process(deadLetterProcessor)
-                .unmarshal().json(Order.class)
+                .unmarshal().json(OrderEntity.class)
                 .process(validationProcessor)
                 .setHeader("LOG_LEVEL", constant("INFO"))
                 .setHeader("LOG_MESSAGE", constant("Validation Successful"))

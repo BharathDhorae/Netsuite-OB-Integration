@@ -2,7 +2,7 @@ package com.promanatia.CamelDemo.repository;
 
 import java.util.List;
 
-import com.promanatia.CamelDemo.DTO.FieldMapping;
+import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -15,7 +15,7 @@ public class FieldMappingRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<FieldMapping> getMappings(String sourceTable) {
+    public List<FieldMappingEntity> getMappings(String sourceTable) {
 
         String sql = """
             SELECT source_column,
@@ -31,7 +31,7 @@ public class FieldMappingRepository {
                 sql,
                 (rs, rowNum) -> {
 
-                    FieldMapping mapping = new FieldMapping();
+                    FieldMappingEntity mapping = new FieldMappingEntity();
 
                     mapping.setSourceColumn(
                             rs.getString("source_column"));

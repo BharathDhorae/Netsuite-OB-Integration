@@ -1,22 +1,31 @@
 package com.promanatia.CamelDemo.service;
 
+import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
+import com.promanatia.CamelDemo.repository.ApplicationLogRepository;
 import org.apache.camel.Exchange;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class CsvProcessingService {
 
-    @Autowired
-    private CsvValidator csvValidator;
+    private static final int DOCUMENT_NO_INDEX = 0;
+    private static final int PRODUCT_INDEX = 7;
 
-    @Autowired
-    private CsvMappingService csvMappingService;
+    private final CsvValidator csvValidator;
+    private final CsvMappingService csvMappingService;
+    private final ApplicationLogRepository applicationLogRepository;
+
+    public CsvProcessingService(
+            CsvValidator csvValidator,
+            CsvMappingService csvMappingService,
+            ApplicationLogRepository applicationLogRepository) {
+
+        this.csvValidator = csvValidator;
+        this.csvMappingService = csvMappingService;
+        this.applicationLogRepository = applicationLogRepository;
+    }
 
     public void processCsvFile(Exchange exchange) {
 
@@ -28,68 +37,51 @@ public class CsvProcessingService {
         String[] headers = rows[0].split(",", -1);
 
         List<String> validRows = new ArrayList<>();
-        List<String> failedRows = new ArrayList<>();
         Set<String> failedOrders = new HashSet<>();
 
-        for (int rowNum = 1; rowNum < rows.length; rowNum++) {
+        for (int i = 1; i < rows.length; i++) {
 
-            String row = rows[rowNum];
+            String row = rows[i];
 
-            if (csvValidator.isEmpty(row)) {
-                continue;
-            }
+            if (csvValidator.isEmpty(row)) continue;
 
-            String[] columns = row.split(",", -1);
-            String orderId = csvValidator.getDocumentNo(columns);
+            String[] cols = row.split(",", -1);
 
-            if (failedOrders.contains(orderId)) {
-                continue;
-            }
+            String orderId = csvValidator.getColumnValue(cols, DOCUMENT_NO_INDEX);
 
             try {
-                csvValidator.validateRow(columns, headers, rowNum, row);
+                csvValidator.validateRow(cols, headers, i, row);
                 validRows.add(row);
-
-            } catch (RuntimeException ex) {
+            } catch (Exception e) {
                 failedOrders.add(orderId);
-                failedRows.add(row);
             }
         }
 
-        String generatedCsv =
-                csvMappingService.generateMappedCsv(headers, validRows);
+        String mappedCsv =
+                validRows.isEmpty()
+                        ? ""
+                        : csvMappingService.generateMappedCsv(headers, validRows);
 
-        String errorCsv =
-                generateErrorCsv(failedOrders);
+        String errorCsv = generateErrorCsv(failedOrders);
 
-        exchange.setProperty("validRows", validRows);
-        exchange.setProperty("failedRows", failedRows);
-        exchange.setProperty("failedOrders", failedOrders);
-
+        exchange.setProperty("mappedCsv", mappedCsv);
         exchange.setProperty("errorCsv", errorCsv);
 
-        exchange.setProperty("hasFailedOrders",
-                !failedOrders.isEmpty());
+        exchange.setProperty("hasValidRows", !validRows.isEmpty());
+        exchange.setProperty("hasFailedOrders", !failedOrders.isEmpty());
 
-        if (validRows.isEmpty()) {
-            exchange.setProperty("hasValidRows", false);
-            exchange.getIn().setBody("");
-        } else {
-            exchange.setProperty("hasValidRows", true);
-            exchange.getIn().setBody(generatedCsv);
-        }
+        exchange.getIn().setBody(mappedCsv);
     }
 
     private String generateErrorCsv(Set<String> failedOrders) {
 
-        StringBuilder errorCsv = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
+        sb.append("documentno\n");
 
-        errorCsv.append("documentno").append("\n");
-
-        for (String documentNo : failedOrders) {
-            errorCsv.append(documentNo).append("\n");
+        for (String id : failedOrders) {
+            sb.append(id).append("\n");
         }
 
-        return errorCsv.toString();
+        return sb.toString();
     }
 }

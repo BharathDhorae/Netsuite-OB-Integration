@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.controller;
 
-import com.promanatia.CamelDemo.DTO.Order;
+import com.promanatia.CamelDemo.DTO.OrderEntity;
 import org.apache.camel.ProducerTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +17,7 @@ public class CamelController {
     }
 
     @PostMapping("/process")
-    public String processOrder(@RequestBody Order order) {
+    public String processOrder(@RequestBody OrderEntity order) {
         producerTemplate.sendBody("direct:processOrder", order);
         return "Order submitted for processing";
     }

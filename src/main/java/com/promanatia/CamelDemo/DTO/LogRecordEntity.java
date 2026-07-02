@@ -1,6 +1,9 @@
 package com.promanatia.CamelDemo.DTO;
 
-public class LogRecord {
+import lombok.Data;
+
+@Data
+public class LogRecordEntity {
 
     private String dateTime;
     private String orderNo;
@@ -8,7 +11,7 @@ public class LogRecord {
     private String message;
     private String payload;
 
-    public LogRecord(String dateTime,
+    public LogRecordEntity(String dateTime,
                      String orderNo,
                      String logLevel,
                      String message,
@@ -20,23 +23,4 @@ public class LogRecord {
         this.payload = payload;
     }
 
-    public String getDateTime() {
-        return dateTime;
-    }
-
-    public String getOrderNo() {
-        return orderNo;
-    }
-
-    public String getLogLevel() {
-        return logLevel;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getPayload() {
-        return payload;
-    }
 }

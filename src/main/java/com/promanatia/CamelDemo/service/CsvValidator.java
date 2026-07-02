@@ -5,13 +5,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class CsvValidator {
 
-    private static final int DOCUMENT_NO_INDEX = 0;
-
     private static final int DESCRIPTION_INDEX = 5;
     private static final int DEPARTMENT_INDEX = 11;
     private static final int LOCATION_INDEX = 14;
+    private static final int INDEX = 15;
 
-    public void validateFile(String[] rows) {
+    public void validateFile(String[] rows) {//validating istaed index to actual coumn valye
 
         if (rows == null || rows.length <= 1) {
             throw new RuntimeException(
@@ -53,7 +52,8 @@ public class CsvValidator {
 
         return colNum == DESCRIPTION_INDEX
                 || colNum == DEPARTMENT_INDEX
-                || colNum == LOCATION_INDEX;
+                || colNum == LOCATION_INDEX
+                || colNum == INDEX;
     }
 
     private String getColumnName(String[] headers,
@@ -68,12 +68,12 @@ public class CsvValidator {
         return "Unknown Column";
     }
 
-    public String getDocumentNo(String[] columns) {
+    public String getColumnValue(String[] columns, int columnIndex) {
 
-        if (columns.length > DOCUMENT_NO_INDEX
-                && columns[DOCUMENT_NO_INDEX] != null) {
+        if (columns.length > columnIndex
+                && columns[columnIndex] != null) {
 
-            return columns[DOCUMENT_NO_INDEX].trim();
+            return columns[columnIndex].trim();
         }
 
         return "";

@@ -2,44 +2,69 @@ package com.promanatia.CamelDemo.schedulars;
 
 import com.promanatia.CamelDemo.config.SftpConfig;
 import com.promanatia.CamelDemo.service.CsvProcessingService;
+import com.promanatia.CamelDemo.service.SftpArchiveService;
+import com.promanatia.CamelDemo.utility.CsvAggregationStrategy;
 import org.apache.camel.builder.RouteBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
-    @Autowired
-    private SftpConfig sftpConfig;
+    private final SftpConfig sftpConfig;
+    private final CsvProcessingService csvProcessingService;
+    private final CsvAggregationStrategy csvAggregationStrategy;
+    private final SftpArchiveService sftpArchiveService;
 
-    @Autowired
-    private CsvProcessingService csvProcessingService;
+    public SftpSchedulerRouteImplementation(
+            SftpConfig sftpConfig,
+            CsvProcessingService csvProcessingService,
+            CsvAggregationStrategy csvAggregationStrategy,
+            SftpArchiveService sftpArchiveService) {
+
+        this.sftpConfig = sftpConfig;
+        this.csvProcessingService = csvProcessingService;
+        this.csvAggregationStrategy = csvAggregationStrategy;
+        this.sftpArchiveService = sftpArchiveService;
+    }
 
     @Override
     public void configure() {
 
         from(buildSftpUri())
                 .routeId("sftp-file-reader")
-                .log("Processing File : ${header.CamelFileName}")
 
                 .convertBodyTo(String.class)
+
+                .aggregate(constant(true), csvAggregationStrategy)
+                .completionSize(10)
+                .completionTimeout(15000)
+
                 .process(csvProcessingService::processCsvFile)
 
-                // Upload valid CSV to S3
+                // ================= Upload to S3 =================
                 .choice()
                 .when(exchangeProperty("hasValidRows").isEqualTo(true))
+
+                .log("Uploading combined CSV to S3...")
+
+                .setBody(exchangeProperty("mappedCsv"))
+
                 .setHeader("CamelAwsS3Key",
-                        simple("success/SORio_${date:now:yyyyMMddHHmmss}.csv"))
+                        simple("DEV/TYU_${date:now:yyyyMMddHHmmss}.csv"))
+
                 .to("aws2-s3://{{aws.bucket.name}}"
                         + "?accessKey=RAW({{aws.access.key}})"
                         + "&secretKey=RAW({{aws.secret.key}})"
                         + "&region={{aws.region}}")
-                .log("Valid CSV uploaded successfully to S3")
-                .otherwise()
-                .log("No valid rows found. Skipping S3 upload.")
-                .end()
 
-                // Write error CSV to SFTP error folder
+                .log("S3 upload completed successfully.")
+
+                // Archive original source files ONLY after S3 success
+                .process(sftpArchiveService::archiveProcessedFiles)
+
+                .log("Original source files moved to Archive.")
+
+                // ================= Error CSV =================
                 .choice()
                 .when(exchangeProperty("hasFailedOrders").isEqualTo(true))
 
@@ -47,37 +72,35 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                     String errorCsv =
                             exchange.getProperty("errorCsv", String.class);
 
-                    exchange.getIn().setBody(errorCsv);
+                    exchange.getIn().setBody(
+                            errorCsv == null ? "" : errorCsv);
                 })
 
-                .log("Error CSV Body : ${body}")
-
                 .setHeader("CamelFileName",
-                        simple("SOR_ERROR_${date:now:yyyyMMddHHmmss}.csv"))
+                        simple("ERROR_${date:now:yyyyMMddHHmmss}.csv"))
 
                 .to(buildSftpErrorUri())
 
-                .log("Error CSV written to SFTP error folder")
+                .log("Error CSV uploaded to remote Error folder.")
 
-                .otherwise()
-                .log("No failed orders found. Skipping error file creation.")
+                .endChoice()
+
                 .end();
     }
 
     private String buildSftpUri() {
-        return "sftp://" + sftpConfig.getHost()
-                + ":" + sftpConfig.getPort()
+
+        return "sftp://" + sftpConfig.getHost() + ":" + sftpConfig.getPort()
                 + sftpConfig.getRemoteDirectory()
                 + "?username=" + sftpConfig.getUsername()
                 + "&password=" + sftpConfig.getPassword()
-                + "&delete=" + sftpConfig.isDelete()
                 + "&include=" + sftpConfig.getInclude()
                 + "&delay=" + sftpConfig.getDelay();
     }
 
     private String buildSftpErrorUri() {
-        return "sftp://" + sftpConfig.getHost()
-                + ":" + sftpConfig.getPort()
+
+        return "sftp://" + sftpConfig.getHost() + ":" + sftpConfig.getPort()
                 + sftpConfig.getErrorDirectory()
                 + "?username=" + sftpConfig.getUsername()
                 + "&password=" + sftpConfig.getPassword();

@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.processor;
 
-import com.promanatia.CamelDemo.DTO.Order;
+import com.promanatia.CamelDemo.DTO.OrderEntity;
 import com.promanatia.CamelDemo.exception.DocumentIdMissingException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -12,7 +12,7 @@ public class OrderValidationProcessor implements Processor {
     @Override
     public void process(Exchange exchange) {
 
-        Order order = exchange.getIn().getBody(Order.class);
+        OrderEntity order = exchange.getIn().getBody(OrderEntity.class);
 
         if (order.getDocumentId() == null ||
                 order.getDocumentId().isBlank()) {
