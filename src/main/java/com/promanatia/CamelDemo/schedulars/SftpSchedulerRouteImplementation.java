@@ -39,13 +39,16 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                 .completionSize(10)
                 .completionTimeout(15000)
 
+                // Process CSV
                 .process(csvProcessingService::processCsvFile)
 
-                // ================= Upload to S3 =================
+                /*
+                 * Upload valid rows to S3
+                 */
                 .choice()
                 .when(exchangeProperty("hasValidRows").isEqualTo(true))
 
-                .log("Uploading combined CSV to S3...")
+                .log("Uploading valid rows to S3...")
 
                 .setBody(exchangeProperty("mappedCsv"))
 
@@ -58,22 +61,21 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                         + "&region={{aws.region}}")
 
                 .log("S3 upload completed successfully.")
+                .end()
 
-                // Archive original source files ONLY after S3 success
-                .process(sftpArchiveService::archiveProcessedFiles)
-
-                .log("Original source files moved to Archive.")
-
-                // ================= Error CSV =================
+                /*
+                 * Upload invalid rows as Error CSV
+                 */
                 .choice()
                 .when(exchangeProperty("hasFailedOrders").isEqualTo(true))
+
+                .log("Creating Error CSV...")
 
                 .process(exchange -> {
                     String errorCsv =
                             exchange.getProperty("errorCsv", String.class);
 
-                    exchange.getIn().setBody(
-                            errorCsv == null ? "" : errorCsv);
+                    exchange.getIn().setBody(errorCsv == null ? "" : errorCsv);
                 })
 
                 .setHeader("CamelFileName",
@@ -81,28 +83,44 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
                 .to(buildSftpErrorUri())
 
-                .log("Error CSV uploaded to remote Error folder.")
+                .log("Error CSV uploaded successfully.")
+                .end()
 
-                .endChoice()
+                /*
+                 * Always archive original files
+                 */
+                .process(sftpArchiveService::archiveProcessedFiles)
 
-                .end();
+                .log("Original source files archived successfully.");
     }
 
     private String buildSftpUri() {
 
-        return "sftp://" + sftpConfig.getHost() + ":" + sftpConfig.getPort()
+        return "sftp://"
+                + sftpConfig.getHost()
+                + ":"
+                + sftpConfig.getPort()
                 + sftpConfig.getRemoteDirectory()
-                + "?username=" + sftpConfig.getUsername()
-                + "&password=" + sftpConfig.getPassword()
-                + "&include=" + sftpConfig.getInclude()
-                + "&delay=" + sftpConfig.getDelay();
+                + "?username="
+                + sftpConfig.getUsername()
+                + "&password="
+                + sftpConfig.getPassword()
+                + "&include="
+                + sftpConfig.getInclude()
+                + "&delay="
+                + sftpConfig.getDelay();
     }
 
     private String buildSftpErrorUri() {
 
-        return "sftp://" + sftpConfig.getHost() + ":" + sftpConfig.getPort()
+        return "sftp://"
+                + sftpConfig.getHost()
+                + ":"
+                + sftpConfig.getPort()
                 + sftpConfig.getErrorDirectory()
-                + "?username=" + sftpConfig.getUsername()
-                + "&password=" + sftpConfig.getPassword();
+                + "?username="
+                + sftpConfig.getUsername()
+                + "&password="
+                + sftpConfig.getPassword();
     }
 }

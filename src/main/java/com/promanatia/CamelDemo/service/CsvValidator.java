@@ -10,7 +10,7 @@ public class CsvValidator {
     private static final int LOCATION_INDEX = 14;
     private static final int INDEX = 15;
 
-    public void validateFile(String[] rows) {//validating istaed index to actual coumn valye
+    public void validateFile(String[] rows) {
 
         if (rows == null || rows.length <= 1) {
             throw new RuntimeException(
