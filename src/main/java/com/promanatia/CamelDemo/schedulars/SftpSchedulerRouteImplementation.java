@@ -86,7 +86,6 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                     exchange.setProperty("headers", headers);
                     exchange.setProperty("rows", rows);
                 })
-
                 .process(exchange -> {
 
                     String[] rows =
@@ -96,6 +95,9 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                             exchange.getProperty("headers", String[].class);
 
                     java.util.List<String> validRows =
+                            new java.util.ArrayList<>();
+
+                    java.util.List<String> errorRows =
                             new java.util.ArrayList<>();
 
                     java.util.Set<String> failedOrders =
@@ -109,32 +111,58 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                             continue;
                         }
 
-                        String[] cols =
-                                row.split(",", -1);
+                        String[] cols = row.split(",", -1);
+
+                        String documentNo =
+                                cols.length > 0
+                                        ? cols[0].replace("\"", "").trim()
+                                        : "UNKNOWN";
 
                         try {
 
                             csvValidatorService.validateRow(
-                                    cols, headers, i, row);
-
-                            validRows.add(row);
+                                    cols,
+                                    headers,
+                                    i,
+                                    row);
 
                         } catch (Exception e) {
 
-                            String orderId =
-                                    cols.length > 0 ? cols[0] : "UNKNOWN";
+                            failedOrders.add(documentNo);
+                        }
+                    }
 
-                            failedOrders.add(orderId);
+                    for (int i = 1; i < rows.length; i++) {
+
+                        String row = rows[i];
+
+                        if (row == null || row.trim().isEmpty()) {
+                            continue;
+                        }
+
+                        String[] cols = row.split(",", -1);
+
+                        String documentNo =
+                                cols.length > 0
+                                        ? cols[0].replace("\"", "").trim()
+                                        : "UNKNOWN";
+
+                        if (failedOrders.contains(documentNo)) {
+
+                            errorRows.add(row);
+
+                        } else {
+
+                            validRows.add(row);
                         }
                     }
 
                     exchange.setProperty("validRows", validRows);
+                    exchange.setProperty("errorRows", errorRows);
                     exchange.setProperty("failedOrders", failedOrders);
+
                 })
 
-                /*
-                 * STEP 3: SUCCESS MAPPING + S3
-                 */
                 .process(exchange -> {
 
                     FlowType flowType =
@@ -165,9 +193,6 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                         + "&secretKey=RAW({{aws.secret.key}})"
                         + "&region={{aws.region}}")
 
-                /*
-                 * STEP 4: ERROR CSV GENERATION
-                 */
                 .process(errorCsvService::generateErrorCsv)
 
                 .process(errorFileUploadService::uploadErrorFile)

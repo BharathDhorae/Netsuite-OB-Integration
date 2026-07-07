@@ -13,9 +13,6 @@ public class CsvValidator {
     private static final int LOCATION_INDEX = 14;
     private static final int INDEX = 15;
 
-    /**
-     * Validate file structure
-     */
     public void validateFile(String[] rows) {
 
         if (rows == null || rows.length == 0) {
@@ -113,15 +110,24 @@ public class CsvValidator {
 
         return columns[columnIndex].trim();
     }
+
     public boolean isEmpty(String value) {
 
-        return value == null || value.trim().isEmpty();
-        /**
-         * Empty check utility
-         */
+        if (value == null) {
+            return true;
+        }
 
+        value = value.trim();
+
+        if (value.length() >= 2
+                && value.startsWith("\"")
+                && value.endsWith("\"")) {
+
+            value = value.substring(1, value.length() - 1).trim();
+        }
+
+        return value.isEmpty();
     }
-
     /**
      * Validate CSV header row
      */

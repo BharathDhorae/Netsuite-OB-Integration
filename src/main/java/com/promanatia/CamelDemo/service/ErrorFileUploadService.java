@@ -14,9 +14,6 @@ public class ErrorFileUploadService {
         this.sftpConfig = sftpConfig;
     }
 
-    /**
-     * Upload error CSV to SFTP error directory
-     */
     public void uploadErrorFile(Exchange exchange) {
 
         String errorCsv =
@@ -51,9 +48,6 @@ public class ErrorFileUploadService {
                 buildErrorSftpUri());
     }
 
-    /**
-     * Build SFTP error URI
-     */
     private String buildErrorSftpUri() {
 
         return "sftp://"
@@ -68,9 +62,6 @@ public class ErrorFileUploadService {
                 + "&binary=true";
     }
 
-    /**
-     * Fallback file name if missing
-     */
     private String buildFallbackFileName(FlowType flowType) {
 
         String timestamp =

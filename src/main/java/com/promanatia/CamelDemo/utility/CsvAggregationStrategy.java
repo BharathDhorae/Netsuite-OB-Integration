@@ -31,9 +31,6 @@ public class CsvAggregationStrategy implements AggregationStrategy {
                 return oldExchange != null ? oldExchange : newExchange;
             }
 
-            /*
-             * FIRST FILE IN BATCH
-             */
             if (oldExchange == null) {
 
                 List<String> files = new ArrayList<>();
@@ -41,16 +38,11 @@ public class CsvAggregationStrategy implements AggregationStrategy {
 
                 newExchange.setProperty(PROCESSED_FILES, files);
 
-                // Keep full CSV as starting point
                 newExchange.getIn().setBody(body);
 
                 return newExchange;
             }
 
-            /*
-             * MERGING LOGIC
-             * We remove header from next files
-             */
             String oldBody =
                     oldExchange.getIn().getBody(String.class);
 
@@ -70,9 +62,6 @@ public class CsvAggregationStrategy implements AggregationStrategy {
 
             oldExchange.getIn().setBody(merged.toString());
 
-            /*
-             * Track file names per flow
-             */
             List<String> files =
                     oldExchange.getProperty(PROCESSED_FILES, List.class);
 

@@ -20,9 +20,6 @@ public class S3UploadService {
     @Value("${aws.region}")
     private String region;
 
-    /**
-     * Upload mapped CSV to S3
-     */
     public void uploadToS3(Exchange exchange) {
 
         String csvContent =
@@ -57,9 +54,6 @@ public class S3UploadService {
         exchange.setProperty("S3_FILE_NAME", fileName);
     }
 
-    /**
-     * Build dynamic S3 file name
-     */
     private String buildFileName(FlowType flowType) {
 
         String timestamp =

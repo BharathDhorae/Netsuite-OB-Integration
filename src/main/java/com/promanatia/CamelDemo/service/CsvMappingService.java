@@ -20,9 +20,6 @@ public class CsvMappingService {
         this.fieldMappingRepository = fieldMappingRepository;
     }
 
-    /**
-     * Main method: converts validated CSV into mapped CSV
-     */
     public String generateMappedCsv(FlowType flowType,
                                     String[] headers,
                                     List<String> validRows) {
@@ -40,9 +37,6 @@ public class CsvMappingService {
 
         StringBuilder outputCsv = new StringBuilder();
 
-        // ---------------------------
-        // Build Target Headers
-        // ---------------------------
         for (int i = 0; i < mappings.size(); i++) {
 
             outputCsv.append(mappings.get(i).getTargetColumn());
@@ -54,9 +48,6 @@ public class CsvMappingService {
 
         outputCsv.append("\n");
 
-        // ---------------------------
-        // Process Rows
-        // ---------------------------
         for (String row : validRows) {
 
             String[] columns = row.split(",", -1);
@@ -95,9 +86,6 @@ public class CsvMappingService {
         return outputCsv.toString();
     }
 
-    /**
-     * Build header → index map
-     */
     private Map<String, Integer> buildHeaderIndex(String[] headers) {
 
         Map<String, Integer> map = new HashMap<>();
@@ -116,9 +104,6 @@ public class CsvMappingService {
         return map;
     }
 
-    /**
-     * Apply transformation rules
-     */
     private String applyTransformation(String value,
                                        String rule) {
 
@@ -150,9 +135,6 @@ public class CsvMappingService {
         }
     }
 
-    /**
-     * Date conversion utility
-     */
     private String convertDate(String value) {
 
         if (value == null || value.isBlank()) {
