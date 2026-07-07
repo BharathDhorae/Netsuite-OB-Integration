@@ -1,8 +1,8 @@
 package com.promanatia.CamelDemo.service;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.repository.FieldMappingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,25 +14,36 @@ import java.util.Map;
 @Service
 public class CsvMappingService {
 
-    @Autowired
-    private FieldMappingRepository fieldMappingRepository;
+    private final FieldMappingRepository fieldMappingRepository;
 
-    public String generateMappedCsv(String[] headers, List<String> validRows) {
+    public CsvMappingService(FieldMappingRepository fieldMappingRepository) {
+        this.fieldMappingRepository = fieldMappingRepository;
+    }
+
+    /**
+     * Main method: converts validated CSV into mapped CSV
+     */
+    public String generateMappedCsv(FlowType flowType,
+                                    String[] headers,
+                                    List<String> validRows) {
 
         List<FieldMappingEntity> mappings =
-                fieldMappingRepository.getMappings("c_order");
+                fieldMappingRepository.getMappings(
+                        flowType.getSourceTable());
 
-        Map<String, Integer> sourceHeaderMap = new HashMap<>();
-
-        // Store source header -> column index
-        for (int i = 0; i < headers.length; i++) {
-            sourceHeaderMap.put(headers[i].trim().toLowerCase(), i);
+        if (mappings == null || mappings.isEmpty()) {
+            throw new RuntimeException(
+                    "No field mappings found for flow: " + flowType);
         }
+
+        Map<String, Integer> sourceHeaderMap = buildHeaderIndex(headers);
 
         StringBuilder outputCsv = new StringBuilder();
 
-        // Generate  Headers
-        for (int i = 0; i < mappings.size(); i++) {{
+        // ---------------------------
+        // Build Target Headers
+        // ---------------------------
+        for (int i = 0; i < mappings.size(); i++) {
 
             outputCsv.append(mappings.get(i).getTargetColumn());
 
@@ -40,11 +51,12 @@ public class CsvMappingService {
                 outputCsv.append(",");
             }
         }
-        }
 
         outputCsv.append("\n");
 
-        // Process each row
+        // ---------------------------
+        // Process Rows
+        // ---------------------------
         for (String row : validRows) {
 
             String[] columns = row.split(",", -1);
@@ -53,19 +65,19 @@ public class CsvMappingService {
 
                 FieldMappingEntity mapping = mappings.get(i);
 
-                Integer sourceIndex = sourceHeaderMap.get(
-                        mapping.getSourceColumn()
-                                .trim()
-                                .toLowerCase());
-
                 String value = "";
 
-                // Read value from source CSV
-                if (sourceIndex != null && sourceIndex < columns.length) {
+                Integer sourceIndex =
+                        sourceHeaderMap.get(
+                                mapping.getSourceColumn()
+                                        .trim()
+                                        .toLowerCase());
+
+                if (sourceIndex != null
+                        && sourceIndex < columns.length) {
                     value = columns[sourceIndex];
                 }
 
-                // Apply transformation
                 value = applyTransformation(
                         value,
                         mapping.getTransformationRuleCode());
@@ -83,33 +95,64 @@ public class CsvMappingService {
         return outputCsv.toString();
     }
 
-    private String applyTransformation(String value,
-                                       String transformationRuleCode) {
+    /**
+     * Build header → index map
+     */
+    private Map<String, Integer> buildHeaderIndex(String[] headers) {
 
-        if (value == null) {
-            value = "";
+        Map<String, Integer> map = new HashMap<>();
+
+        if (headers == null) {
+            return map;
         }
 
-        if (transformationRuleCode == null ||
-                transformationRuleCode.isBlank()) {
+        for (int i = 0; i < headers.length; i++) {
+
+            if (headers[i] != null) {
+                map.put(headers[i].trim().toLowerCase(), i);
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * Apply transformation rules
+     */
+    private String applyTransformation(String value,
+                                       String rule) {
+
+        if (value == null) {
+            return "";
+        }
+
+        if (rule == null || rule.isBlank()) {
             return value;
         }
 
-        switch (transformationRuleCode.trim().toUpperCase()) {
+        switch (rule.trim().toUpperCase()) {
 
             case "DIRECT":
                 return value;
+
+            case "UPPERCASE":
+                return value.toUpperCase();
+
+            case "LOWERCASE":
+                return value.toLowerCase();
 
             case "DATE_FORMAT":
                 return convertDate(value);
 
             default:
-                throw new IllegalArgumentException(
-                        "Unsupported Transformation Rule : "
-                                + transformationRuleCode);
+                throw new RuntimeException(
+                        "Unsupported transformation rule: " + rule);
         }
     }
 
+    /**
+     * Date conversion utility
+     */
     private String convertDate(String value) {
 
         if (value == null || value.isBlank()) {
@@ -117,17 +160,21 @@ public class CsvMappingService {
         }
 
         try {
-            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
 
-            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("MMddyyyy");
+            DateTimeFormatter inputFormatter =
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
 
-            LocalDateTime dateTime = LocalDateTime.parse(value.trim(), inputFormatter);
+            DateTimeFormatter outputFormatter =
+                    DateTimeFormatter.ofPattern("MMddyyyy");
+
+            LocalDateTime dateTime =
+                    LocalDateTime.parse(value.trim(), inputFormatter);
 
             return dateTime.format(outputFormatter);
 
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid date format: " + value, e);
+            throw new RuntimeException(
+                    "Invalid date format: " + value, e);
         }
     }
-
 }

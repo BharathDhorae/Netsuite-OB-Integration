@@ -1,8 +1,8 @@
 package com.promanatia.CamelDemo.schedulars;
 
+import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.config.SftpConfig;
-import com.promanatia.CamelDemo.service.CsvProcessingService;
-import com.promanatia.CamelDemo.service.SftpArchiveService;
+import com.promanatia.CamelDemo.service.*;
 import com.promanatia.CamelDemo.utility.CsvAggregationStrategy;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
@@ -11,87 +11,170 @@ import org.springframework.stereotype.Component;
 public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
     private final SftpConfig sftpConfig;
-    private final CsvProcessingService csvProcessingService;
+
     private final CsvAggregationStrategy csvAggregationStrategy;
+    private final CsvValidator csvValidatorService;
+    private final CsvMappingService csvMappingService;
+    private final S3UploadService s3UploadService;
+    private final ErrorCsvService errorCsvService;
+    private final ErrorFileUploadService errorFileUploadService;
     private final SftpArchiveService sftpArchiveService;
 
     public SftpSchedulerRouteImplementation(
             SftpConfig sftpConfig,
-            CsvProcessingService csvProcessingService,
             CsvAggregationStrategy csvAggregationStrategy,
+            CsvValidator csvValidatorService,
+            CsvMappingService csvMappingService,
+            S3UploadService s3UploadService,
+            ErrorCsvService errorCsvService,
+            ErrorFileUploadService errorFileUploadService,
             SftpArchiveService sftpArchiveService) {
 
         this.sftpConfig = sftpConfig;
-        this.csvProcessingService = csvProcessingService;
         this.csvAggregationStrategy = csvAggregationStrategy;
+        this.csvValidatorService = csvValidatorService;
+        this.csvMappingService = csvMappingService;
+        this.s3UploadService = s3UploadService;
+        this.errorCsvService = errorCsvService;
+        this.errorFileUploadService = errorFileUploadService;
         this.sftpArchiveService = sftpArchiveService;
     }
 
     @Override
     public void configure() {
 
+        onException(Exception.class)
+                .log("Error processing file: ${header.CamelFileName}")
+                .log("${exception.message}")
+                .handled(true);
+
         from(buildSftpUri())
                 .routeId("sftp-file-reader")
 
+                .process(exchange -> {
+
+                    String fileName =
+                            exchange.getIn().getHeader("CamelFileName", String.class);
+
+                    FlowType flowType =
+                            FlowType.fromFileName(fileName);
+
+                    exchange.setProperty("FLOW_TYPE", flowType);
+                })
+
                 .convertBodyTo(String.class)
 
-                .aggregate(constant(true), csvAggregationStrategy)
+                .aggregate(exchangeProperty("FLOW_TYPE"), csvAggregationStrategy)
                 .completionSize(10)
                 .completionTimeout(15000)
 
-                // Process CSV
-                .process(csvProcessingService::processCsvFile)
+                .process(exchange -> {
+
+                    String fileContent =
+                            exchange.getIn().getBody(String.class);
+
+                    String[] rows =
+                            fileContent.split("\\r?\\n");
+
+                    csvValidatorService.validateFile(rows);
+
+                    String[] headers =
+                            rows[0].split(",", -1);
+
+                    csvValidatorService.validateHeader(headers);
+
+                    exchange.setProperty("headers", headers);
+                    exchange.setProperty("rows", rows);
+                })
+
+                .process(exchange -> {
+
+                    String[] rows =
+                            exchange.getProperty("rows", String[].class);
+
+                    String[] headers =
+                            exchange.getProperty("headers", String[].class);
+
+                    java.util.List<String> validRows =
+                            new java.util.ArrayList<>();
+
+                    java.util.Set<String> failedOrders =
+                            new java.util.HashSet<>();
+
+                    for (int i = 1; i < rows.length; i++) {
+
+                        String row = rows[i];
+
+                        if (row == null || row.trim().isEmpty()) {
+                            continue;
+                        }
+
+                        String[] cols =
+                                row.split(",", -1);
+
+                        try {
+
+                            csvValidatorService.validateRow(
+                                    cols, headers, i, row);
+
+                            validRows.add(row);
+
+                        } catch (Exception e) {
+
+                            String orderId =
+                                    cols.length > 0 ? cols[0] : "UNKNOWN";
+
+                            failedOrders.add(orderId);
+                        }
+                    }
+
+                    exchange.setProperty("validRows", validRows);
+                    exchange.setProperty("failedOrders", failedOrders);
+                })
 
                 /*
-                 * Upload valid rows to S3
+                 * STEP 3: SUCCESS MAPPING + S3
                  */
-                .choice()
-                .when(exchangeProperty("hasValidRows").isEqualTo(true))
+                .process(exchange -> {
 
-                .log("Uploading valid rows to S3...")
+                    FlowType flowType =
+                            exchange.getProperty("FLOW_TYPE", FlowType.class);
 
-                .setBody(exchangeProperty("mappedCsv"))
+                    String[] headers =
+                            exchange.getProperty("headers", String[].class);
 
-                .setHeader("CamelAwsS3Key",
-                        simple("Test/SalesOrder_${date:now:yyyyMMddHHmmss}.csv"))
+                    java.util.List<String> validRows =
+                            exchange.getProperty("validRows", java.util.List.class);
 
-                .to("aws2-s3://{{aws.bucket.name}}"
+                    if (validRows != null && !validRows.isEmpty()) {
+
+                        String mappedCsv =
+                                csvMappingService.generateMappedCsv(
+                                        flowType,
+                                        headers,
+                                        validRows);
+
+                        exchange.setProperty("mappedCsv", mappedCsv);
+                    }
+                })
+
+                .process(s3UploadService::uploadToS3)
+
+                .toD("aws2-s3://{{aws.bucket.name}}"
                         + "?accessKey=RAW({{aws.access.key}})"
                         + "&secretKey=RAW({{aws.secret.key}})"
                         + "&region={{aws.region}}")
 
-                .log("S3 upload completed successfully.")
-                .end()
-
                 /*
-                 * Upload invalid rows as Error CSV
+                 * STEP 4: ERROR CSV GENERATION
                  */
-                .choice()
-                .when(exchangeProperty("hasFailedOrders").isEqualTo(true))
+                .process(errorCsvService::generateErrorCsv)
 
-                .log("Creating Error CSV...")
+                .process(errorFileUploadService::uploadErrorFile)
 
-                .process(exchange -> {
-                    String errorCsv =
-                            exchange.getProperty("errorCsv", String.class);
+                .toD("${exchangeProperty.ERROR_SFTP_URI}")
 
-                    exchange.getIn().setBody(errorCsv == null ? "" : errorCsv);
-                })
-
-                .setHeader("CamelFileName",
-                        simple("ERROR_${date:now:yyyyMMddHHmmss}.csv"))
-
-                .to(buildSftpErrorUri())
-
-                .log("Error CSV uploaded successfully.")
-                .end()
-
-                /*
-                 * Always archive original files
-                 */
-                .process(sftpArchiveService::archiveProcessedFiles)
-
-                .log("Original source files archived successfully.");
+                .process(sftpArchiveService::archiveProcessedFiles);
     }
 
     private String buildSftpUri() {
@@ -101,26 +184,18 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
                 + ":"
                 + sftpConfig.getPort()
                 + sftpConfig.getRemoteDirectory()
-                + "?username="
-                + sftpConfig.getUsername()
-                + "&password="
-                + sftpConfig.getPassword()
-                + "&include="
-                + sftpConfig.getInclude()
-                + "&delay="
-                + sftpConfig.getDelay();
-    }
 
-    private String buildSftpErrorUri() {
+                + "?username=" + sftpConfig.getUsername()
+                + "&password=" + sftpConfig.getPassword()
+                + "&include=" + sftpConfig.getInclude()
+                + "&delay=" + sftpConfig.getDelay()
 
-        return "sftp://"
-                + sftpConfig.getHost()
-                + ":"
-                + sftpConfig.getPort()
-                + sftpConfig.getErrorDirectory()
-                + "?username="
-                + sftpConfig.getUsername()
-                + "&password="
-                + sftpConfig.getPassword();
+                + "&move=" + sftpConfig.getArchiveDirectory()
+                + "/${file:name}"
+
+                + "&moveFailed=" + sftpConfig.getErrorDirectory()
+                + "/${file:name}"
+
+                + "&readLock=changed";
     }
 }

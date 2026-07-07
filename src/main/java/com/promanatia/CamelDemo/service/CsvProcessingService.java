@@ -1,7 +1,6 @@
 package com.promanatia.CamelDemo.service;
 
-import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
-import com.promanatia.CamelDemo.repository.ApplicationLogRepository;
+import com.promanatia.CamelDemo.DTO.FlowType;
 import org.apache.camel.Exchange;
 import org.springframework.stereotype.Service;
 
@@ -15,71 +14,112 @@ public class CsvProcessingService {
 
     private final CsvValidator csvValidator;
     private final CsvMappingService csvMappingService;
-    private final ApplicationLogRepository applicationLogRepository;
 
     public CsvProcessingService(
             CsvValidator csvValidator,
-            CsvMappingService csvMappingService,
-            ApplicationLogRepository applicationLogRepository) {
+            CsvMappingService csvMappingService) {
 
         this.csvValidator = csvValidator;
         this.csvMappingService = csvMappingService;
-        this.applicationLogRepository = applicationLogRepository;
     }
 
     public void processCsvFile(Exchange exchange) {
 
-        String fileContent = exchange.getIn().getBody(String.class);
-        String[] rows = fileContent.split("\\r?\\n");
+        String fileContent =
+                exchange.getIn().getBody(String.class);
 
+        String[] rows =
+                fileContent.split("\\r?\\n");
+
+        // Validate file
         csvValidator.validateFile(rows);
 
-        String[] headers = rows[0].split(",", -1);
+        String[] headers =
+                rows[0].split(",", -1);
 
         List<String> validRows = new ArrayList<>();
         Set<String> failedOrders = new HashSet<>();
+
+        FlowType flowType =
+                exchange.getProperty("FLOW_TYPE", FlowType.class);
 
         for (int i = 1; i < rows.length; i++) {
 
             String row = rows[i];
 
-            if (csvValidator.isEmpty(row)) continue;
+            if (csvValidator.isEmpty(row)) {
+                continue;
+            }
 
-            String[] cols = row.split(",", -1);
+            String[] cols =
+                    row.split(",", -1);
 
-            String orderId = csvValidator.getColumnValue(cols, DOCUMENT_NO_INDEX);
+            String orderId =
+                    csvValidator.getColumnValue(cols, DOCUMENT_NO_INDEX);
+
+            String productId =
+                    csvValidator.getColumnValue(cols, PRODUCT_INDEX);
 
             try {
+
                 csvValidator.validateRow(cols, headers, i, row);
+
                 validRows.add(row);
+
             } catch (Exception e) {
+
                 failedOrders.add(orderId);
+
+                // ⚠️ Removed hardcoded SO
+                // You can later plug logging service here per flow
+
             }
         }
 
+        // -----------------------------
+        // Mapping (FIXED CALL HERE)
+        // -----------------------------
         String mappedCsv =
                 validRows.isEmpty()
                         ? ""
-                        : csvMappingService.generateMappedCsv(headers, validRows);
+                        : csvMappingService.generateMappedCsv(
+                        flowType,
+                        headers,
+                        validRows);
 
-        String errorCsv = generateErrorCsv(failedOrders);
+        // -----------------------------
+        // Error CSV
+        // -----------------------------
+        String errorCsv =
+                generateErrorCsv(failedOrders);
 
+        // -----------------------------
+        // Exchange properties
+        // -----------------------------
         exchange.setProperty("mappedCsv", mappedCsv);
         exchange.setProperty("errorCsv", errorCsv);
 
         exchange.setProperty("hasValidRows", !validRows.isEmpty());
         exchange.setProperty("hasFailedOrders", !failedOrders.isEmpty());
 
+        exchange.setProperty("failedOrders", failedOrders);
+
         exchange.getIn().setBody(mappedCsv);
     }
 
+    /**
+     * Generate error CSV for failed records
+     */
     private String generateErrorCsv(Set<String> failedOrders) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("documentno\n");
 
         for (String id : failedOrders) {
-            sb.append(id).append("\n");
+
+            if (id != null && !id.trim().isEmpty()) {
+                sb.append(id.trim()).append("\n");
+            }
         }
 
         return sb.toString();

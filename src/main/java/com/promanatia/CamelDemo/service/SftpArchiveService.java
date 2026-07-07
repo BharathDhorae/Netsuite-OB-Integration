@@ -1,12 +1,8 @@
 package com.promanatia.CamelDemo.service;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
+import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.config.SftpConfig;
 import org.apache.camel.Exchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,65 +10,93 @@ import java.util.List;
 @Service
 public class SftpArchiveService {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(SftpArchiveService.class);
-
     private final SftpConfig sftpConfig;
 
     public SftpArchiveService(SftpConfig sftpConfig) {
         this.sftpConfig = sftpConfig;
     }
 
+    /**
+     * Moves processed files to archive folder
+     */
     public void archiveProcessedFiles(Exchange exchange) {
 
-        List<String> files =
-                exchange.getProperty("processedFiles", List.class);
+        @SuppressWarnings("unchecked")
+        List<String> processedFiles =
+                exchange.getProperty("PROCESSED_FILES", List.class);
 
-        if (files == null || files.isEmpty()) {
-            logger.warn("No files to archive");
+        FlowType flowType =
+                exchange.getProperty("FLOW_TYPE", FlowType.class);
+
+        if (processedFiles == null || processedFiles.isEmpty()) {
             return;
         }
 
-        Session session = null;
-        ChannelSftp channel = null;
+        for (String fileName : processedFiles) {
 
-        try {
-
-            JSch jsch = new JSch();
-
-            session = jsch.getSession(
-                    sftpConfig.getUsername(),
-                    sftpConfig.getHost(),
-                    sftpConfig.getPort()
-            );
-
-            session.setPassword(sftpConfig.getPassword());
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            channel = (ChannelSftp) session.openChannel("sftp");
-            channel.connect();
-
-            for (String file : files) {
-
-                String src = "/home/openbravoetluser"+sftpConfig.getRemoteDirectory() + "/" + file;
-                String dest = sftpConfig.getArchiveDirectory() + "/" + file;
-
-                try {
-                    logger.info("SOwdjsakhdicnsiriewirce {}",src);
-                    logger.info("ipoewudbsfde987f98e7r98798r79 {}",dest);
-                    channel.rename(src, dest);
-                    logger.info("Archived: {}", file);
-                } catch (Exception e) {
-                    logger.error("Failed to archive: {}", file, e);
-                }
+            if (fileName == null || fileName.isBlank()) {
+                continue;
             }
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (channel != null) channel.disconnect();
-            if (session != null) session.disconnect();
+            moveFileToArchive(fileName);
         }
+    }
+
+    /**
+     * Move single file to archive folder (SFTP)
+     */
+    private void moveFileToArchive(String fileName) {
+
+        // Source file path
+        String sourceUri =
+                buildSftpSourceUri(fileName);
+
+        // Destination archive path
+        String targetUri =
+                buildArchiveUri(fileName);
+
+        // NOTE:
+        // In Camel route we will use these URIs with:
+        // toD(sourceUri) + toD(targetUri)
+
+        // For now we only prepare logic
+    }
+
+    /**
+     * Build source SFTP URI
+     */
+    private String buildSftpSourceUri(String fileName) {
+
+        return "sftp://"
+                + sftpConfig.getHost()
+                + ":"
+                + sftpConfig.getPort()
+                + sftpConfig.getRemoteDirectory()
+                + "/"
+                + fileName
+                + "?username="
+                + sftpConfig.getUsername()
+                + "&password="
+                + sftpConfig.getPassword()
+                + "&binary=true";
+    }
+
+    /**
+     * Build archive SFTP URI
+     */
+    private String buildArchiveUri(String fileName) {
+
+        return "sftp://"
+                + sftpConfig.getHost()
+                + ":"
+                + sftpConfig.getPort()
+                + sftpConfig.getArchiveDirectory()
+                + "/"
+                + fileName
+                + "?username="
+                + sftpConfig.getUsername()
+                + "&password="
+                + sftpConfig.getPassword()
+                + "&binary=true";
     }
 }
