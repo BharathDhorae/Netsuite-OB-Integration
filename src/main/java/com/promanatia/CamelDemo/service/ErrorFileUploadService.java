@@ -30,22 +30,8 @@ public class ErrorFileUploadService {
 
 		exchange.getIn().setBody(errorCsv);
 		exchange.getIn().setHeader("CamelFileName", fileName);
-		exchange.setProperty("ERROR_SFTP_URI", buildErrorSftpUri());
+		exchange.setProperty("ERROR_SFTP_URI", sftpConfig.getErrorSftpUri());
 	}
-	
-	 private String buildErrorSftpUri() {
-
-	        return "sftp://"
-	                + sftpConfig.getHost()
-	                + ":"
-	                + sftpConfig.getPort()
-	                + sftpConfig.getErrorDirectory()
-	                + "?username="
-	                + sftpConfig.getUsername()
-	                + "&password="
-	                + sftpConfig.getPassword()
-	                + "&binary=true";
-	    }
 
 	private String buildFallbackFileName(FlowType flowType) {
 		String timestamp = String.valueOf(System.currentTimeMillis());

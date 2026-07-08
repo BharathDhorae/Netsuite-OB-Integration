@@ -25,7 +25,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 	public SftpSchedulerRouteImplementation(SftpConfig sftpConfig, CsvAggregationStrategy csvAggregationStrategy,
 			CsvValidator csvValidatorService, CsvMappingService csvMappingService, S3UploadService s3UploadService,
 			ErrorCsvService errorCsvService, ErrorFileUploadService errorFileUploadService,
-			SftpArchiveService sftpArchiveService,ApplicationLoggerService loggerService) {
+			SftpArchiveService sftpArchiveService, ApplicationLoggerService loggerService) {
 
 		this.sftpConfig = sftpConfig;
 		this.csvAggregationStrategy = csvAggregationStrategy;
@@ -44,7 +44,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 		onException(Exception.class).log("Error processing file: ${header.CamelFileName}").log("${exception.message}")
 				.handled(true);
 
-		from(buildSftpUri()).routeId("sftp-file-reader")
+		from(sftpConfig.getSftpUri()).routeId("sftp-file-reader")
 
 				.process(exchange -> {
 
@@ -130,15 +130,5 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
 				.process(errorCsvService::generateErrorCsv).process(errorFileUploadService::uploadErrorFile)
 				.toD("${exchangeProperty.ERROR_SFTP_URI}").process(sftpArchiveService::archiveProcessedFiles);
-	}
-
-	private String buildSftpUri() {
-
-		return "sftp://" + sftpConfig.getHost() + ":" + sftpConfig.getPort() + sftpConfig.getRemoteDirectory()
-
-				+ "?username=" + sftpConfig.getUsername() + "&password=" + sftpConfig.getPassword() + "&include="
-				+ sftpConfig.getInclude() + "&delay=" + sftpConfig.getDelay() + "&move="
-				+ sftpConfig.getArchiveDirectory() + "/${file:name}" + "&moveFailed=" + sftpConfig.getErrorDirectory()
-				+ "/${file:name}" + "&readLock=changed";
 	}
 }

@@ -39,6 +39,6 @@ public class S3UploadService {
 
 	private String buildFileName(FlowType flowType) {
 		String timestamp = String.valueOf(System.currentTimeMillis());
-		return "developer/" + flowType.getOutputFileName() + "_" + timestamp + ".csv";
+		return "test/" + flowType.getOutputFileName() + "_" + timestamp + ".csv";
 	}
 }

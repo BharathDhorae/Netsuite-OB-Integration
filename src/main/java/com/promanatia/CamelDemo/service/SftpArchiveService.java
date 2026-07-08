@@ -10,71 +10,33 @@ import java.util.List;
 @Service
 public class SftpArchiveService {
 
-    private final SftpConfig sftpConfig;
+	private final SftpConfig sftpConfig;
 
-    public SftpArchiveService(SftpConfig sftpConfig) {
-        this.sftpConfig = sftpConfig;
-    }
+	public SftpArchiveService(SftpConfig sftpConfig) {
+		this.sftpConfig = sftpConfig;
+	}
 
-    public void archiveProcessedFiles(Exchange exchange) {
+	public void archiveProcessedFiles(Exchange exchange) {
 
-        @SuppressWarnings("unchecked")
-        List<String> processedFiles = exchange.getProperty("PROCESSED_FILES", List.class);
+		@SuppressWarnings("unchecked")
+		List<String> processedFiles = exchange.getProperty("PROCESSED_FILES", List.class);
 
-        FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+		if (processedFiles == null || processedFiles.isEmpty()) {
+			return;
+		}
+		for (String fileName : processedFiles) {
+			if (fileName == null || fileName.isBlank()) {
+				continue;
+			}
+			moveFileToArchive(fileName);
+		}
+	}
 
-        if (processedFiles == null || processedFiles.isEmpty()) {
-            return;
-        }
+	private void moveFileToArchive(String fileName) {
 
-        for (String fileName : processedFiles) {
+		String sourceUri = sftpConfig.getSftpSourceUri(fileName);
+		String targetUri = sftpConfig.getArchiveUri(fileName);
 
-            if (fileName == null || fileName.isBlank()) {
-                continue;
-            }
-
-            moveFileToArchive(fileName);
-        }
-    }
-
-
-    private void moveFileToArchive(String fileName) {
-
-        String sourceUri = buildSftpSourceUri(fileName);
-        String targetUri = buildArchiveUri(fileName);
-
-    }
-
-
-    private String buildSftpSourceUri(String fileName) {
-
-        return "sftp://"
-                + sftpConfig.getHost()
-                + ":"
-                + sftpConfig.getPort()
-                + sftpConfig.getRemoteDirectory()
-                + "/"
-                + fileName
-                + "?username="
-                + sftpConfig.getUsername()
-                + "&password="
-                + sftpConfig.getPassword()
-                + "&binary=true";
-    }
-
-    private String buildArchiveUri(String fileName) {
-
-        return "sftp://"
-                + sftpConfig.getHost()
-                + ":"
-                + sftpConfig.getPort()
-                + sftpConfig.getArchiveDirectory()
-                + "/"
-                + fileName
-                + "?username="
-                + sftpConfig.getUsername()
-                + "&password="
-                + sftpConfig.getPassword()
-                + "&binary=true";
-    }
+	}
 }
