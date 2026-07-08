@@ -11,75 +11,57 @@ import java.util.List;
 @Component
 public class CsvAggregationStrategy implements AggregationStrategy {
 
-    private static final String PROCESSED_FILES = "PROCESSED_FILES";
+	private static final String PROCESSED_FILES = "PROCESSED_FILES";
 
-    @Override
-    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+	@Override
+	public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
 
-        try {
+		try {
 
-            String fileName =
-                    newExchange.getIn().getHeader("CamelFileName", String.class);
+			String fileName = newExchange.getIn().getHeader("CamelFileName", String.class);
+			FlowType flowType = newExchange.getProperty("FLOW_TYPE", FlowType.class);
+			String body = newExchange.getIn().getBody(String.class);
+			if (body == null || body.trim().isEmpty()) {
+				return oldExchange != null ? oldExchange : newExchange;
+			}
 
-            FlowType flowType =
-                    newExchange.getProperty("FLOW_TYPE", FlowType.class);
+			if (oldExchange == null) {
+				List<String> files = new ArrayList<>();
+				files.add(fileName);
+				newExchange.setProperty(PROCESSED_FILES, files);
+				newExchange.getIn().setBody(body);
 
-            String body =
-                    newExchange.getIn().getBody(String.class);
+				return newExchange;
+			}
 
-            if (body == null || body.trim().isEmpty()) {
-                return oldExchange != null ? oldExchange : newExchange;
-            }
+			String oldBody = oldExchange.getIn().getBody(String.class);
+			String[] newRows = body.split("\\r?\\n");
+			StringBuilder merged = new StringBuilder(oldBody);
+			for (int i = 1; i < newRows.length; i++) {
+				if (newRows[i] == null || newRows[i].trim().isEmpty()) {
+					continue;
+				}
 
-            if (oldExchange == null) {
+				merged.append("\n").append(newRows[i]);
+			}
 
-                List<String> files = new ArrayList<>();
-                files.add(fileName);
+			oldExchange.getIn().setBody(merged.toString());
+			List<String> files = oldExchange.getProperty(PROCESSED_FILES, List.class);
 
-                newExchange.setProperty(PROCESSED_FILES, files);
+			if (files == null) {
+				files = new ArrayList<>();
+			}
 
-                newExchange.getIn().setBody(body);
+			if (!files.contains(fileName)) {
+				files.add(fileName);
+			}
 
-                return newExchange;
-            }
+			oldExchange.setProperty(PROCESSED_FILES, files);
 
-            String oldBody =
-                    oldExchange.getIn().getBody(String.class);
+			return oldExchange;
 
-            String[] newRows =
-                    body.split("\\r?\\n");
-
-            StringBuilder merged = new StringBuilder(oldBody);
-
-            for (int i = 1; i < newRows.length; i++) {
-
-                if (newRows[i] == null || newRows[i].trim().isEmpty()) {
-                    continue;
-                }
-
-                merged.append("\n").append(newRows[i]);
-            }
-
-            oldExchange.getIn().setBody(merged.toString());
-
-            List<String> files =
-                    oldExchange.getProperty(PROCESSED_FILES, List.class);
-
-            if (files == null) {
-                files = new ArrayList<>();
-            }
-
-            if (!files.contains(fileName)) {
-                files.add(fileName);
-            }
-
-            oldExchange.setProperty(PROCESSED_FILES, files);
-
-            return oldExchange;
-
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Error while aggregating CSV files", e);
-        }
-    }
+		} catch (Exception e) {
+			throw new RuntimeException("Error while aggregating CSV files", e);
+		}
+	}
 }

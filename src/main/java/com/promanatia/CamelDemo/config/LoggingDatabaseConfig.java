@@ -12,16 +12,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class LoggingDatabaseConfig {
 
-    @Bean(name = "loggingDataSource")
-    @ConfigurationProperties(prefix = "logging.datasource")
-    public DataSource loggingDataSource() {
-        return DataSourceBuilder.create().build();
-    }
+	@Bean(name = "loggingDataSource")
+	@ConfigurationProperties(prefix = "logging.datasource")
+	public DataSource loggingDataSource() {
+		return DataSourceBuilder.create().build();
+	}
 
-    @Bean(name = "loggingJdbcTemplate")
-    public JdbcTemplate loggingJdbcTemplate(
-            @Qualifier("loggingDataSource") DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
-    }
+	@Bean(name = "loggingJdbcTemplate")
+	public JdbcTemplate loggingJdbcTemplate(@Qualifier("loggingDataSource") DataSource dataSource) {
+		return new JdbcTemplate(dataSource);
+	}
 
 }

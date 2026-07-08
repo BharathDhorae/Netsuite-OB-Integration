@@ -16,15 +16,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApplicationLogEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private Timestamp logTime;
-    private String product;
-    private String flowType;
-    private String documentId;
-    private String logLevel;
-    private String message;
-    private String errorMessage;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	private Timestamp logTime;
+	private String product;
+	private String flowType;
+	private String documentId;
+	private String logLevel;
+	private String message;
+	private String errorMessage;
 
 }

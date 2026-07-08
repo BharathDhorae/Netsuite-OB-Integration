@@ -1,4 +1,4 @@
-package com.promanatia.CamelDemo.service;
+package com.promanatia.CamelDemo.utility;
 
 import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
 import com.promanatia.CamelDemo.repository.ApplicationLogRepository;

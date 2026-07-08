@@ -8,68 +8,47 @@ import org.springframework.stereotype.Service;
 @Service
 public class ErrorFileUploadService {
 
-    private final SftpConfig sftpConfig;
+	private final SftpConfig sftpConfig;
 
-    public ErrorFileUploadService(SftpConfig sftpConfig) {
-        this.sftpConfig = sftpConfig;
-    }
+	public ErrorFileUploadService(SftpConfig sftpConfig) {
+		this.sftpConfig = sftpConfig;
+	}
 
-    public void uploadErrorFile(Exchange exchange) {
+	public void uploadErrorFile(Exchange exchange) {
 
-        String errorCsv =
-                exchange.getProperty("errorCsv", String.class);
+		String errorCsv = exchange.getProperty("errorCsv", String.class);
+		Boolean hasFailed = exchange.getProperty("hasFailedOrders", Boolean.class);
+		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+		if (hasFailed == null || !hasFailed || errorCsv == null || errorCsv.isBlank()) {
+			return;
+		}
 
-        Boolean hasFailed =
-                exchange.getProperty("hasFailedOrders", Boolean.class);
+		String fileName = exchange.getProperty("ERROR_FILE_NAME", String.class);
+		if (fileName == null) {
+			fileName = buildFallbackFileName(flowType);
+		}
 
-        FlowType flowType =
-                exchange.getProperty("FLOW_TYPE", FlowType.class);
+		exchange.getIn().setBody(errorCsv);
+		exchange.getIn().setHeader("CamelFileName", fileName);
+		exchange.setProperty("ERROR_SFTP_URI", buildErrorSftpUri());
+	}
+	
+	 private String buildErrorSftpUri() {
 
-        if (hasFailed == null || !hasFailed
-                || errorCsv == null || errorCsv.isBlank()) {
-            return;
-        }
+	        return "sftp://"
+	                + sftpConfig.getHost()
+	                + ":"
+	                + sftpConfig.getPort()
+	                + sftpConfig.getErrorDirectory()
+	                + "?username="
+	                + sftpConfig.getUsername()
+	                + "&password="
+	                + sftpConfig.getPassword()
+	                + "&binary=true";
+	    }
 
-        String fileName =
-                exchange.getProperty("ERROR_FILE_NAME", String.class);
-
-        if (fileName == null) {
-            fileName = buildFallbackFileName(flowType);
-        }
-
-        exchange.getIn().setBody(errorCsv);
-
-        exchange.getIn().setHeader(
-                "CamelFileName",
-                fileName
-        );
-
-        exchange.setProperty("ERROR_SFTP_URI",
-                buildErrorSftpUri());
-    }
-
-    private String buildErrorSftpUri() {
-
-        return "sftp://"
-                + sftpConfig.getHost()
-                + ":"
-                + sftpConfig.getPort()
-                + sftpConfig.getErrorDirectory()
-                + "?username="
-                + sftpConfig.getUsername()
-                + "&password="
-                + sftpConfig.getPassword()
-                + "&binary=true";
-    }
-
-    private String buildFallbackFileName(FlowType flowType) {
-
-        String timestamp =
-                String.valueOf(System.currentTimeMillis());
-
-        return flowType.getOutputFileName()
-                + "_ERROR_"
-                + timestamp
-                + ".csv";
-    }
+	private String buildFallbackFileName(FlowType flowType) {
+		String timestamp = String.valueOf(System.currentTimeMillis());
+		return flowType.getOutputFileName() + "_ERROR_" + timestamp + ".csv";
+	}
 }
