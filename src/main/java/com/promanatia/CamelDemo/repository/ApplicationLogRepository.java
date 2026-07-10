@@ -10,7 +10,7 @@ public class ApplicationLogRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public ApplicationLogRepository(@Qualifier("loggingJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public ApplicationLogRepository(@Qualifier("mainJdbcTemplate") JdbcTemplate jdbcTemplate) {
 
 		this.jdbcTemplate = jdbcTemplate;
 	}
@@ -18,7 +18,7 @@ public class ApplicationLogRepository {
 	public void save(ApplicationLogEntity log) {
 
 		String sql = """
-				INSERT INTO application_logs
+				INSERT INTO apache_application_logs
 				(
 				    log_time,
 				    product,

@@ -36,6 +36,9 @@ public class SftpConfig {
 	@Value("${sftp.remote.archive}")
 	private String archiveDirectory;
 
+	@Value("${sftp.remote.incoming-directory}")
+	private String inDirectory;
+
 	public String getSftpUri() {
 		return String.format(
 				"sftp://%s:%d%s?username=%s&password=%s&include=%s&delay=%d&move=%s/${file:name}&moveFailed=%s/${file:name}&readLock=changed",
@@ -55,6 +58,13 @@ public class SftpConfig {
 	public String getArchiveUri(String fileName) {
 		return String.format("sftp://%s:%d%s/%s?username=%s&password=%s&binary=true", host, port, archiveDirectory,
 				fileName, username, password);
+	}
+
+	public String getInSftpUri() {
+
+		return String.format("sftp://%s:%d%s?username=%s&password=%s&binary=true", host, port, inDirectory, username,
+				password);
+
 	}
 
 }

@@ -1,6 +1,8 @@
 package com.promanatia.CamelDemo.service;
 
 import com.promanatia.CamelDemo.DTO.FlowType;
+import com.promanatia.CamelDemo.config.S3Config;
+
 import org.apache.camel.Exchange;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,15 +12,6 @@ public class S3UploadService {
 
 	@Value("${aws.bucket.name}")
 	private String bucketName;
-
-	@Value("${aws.access.key}")
-	private String accessKey;
-
-	@Value("${aws.secret.key}")
-	private String secretKey;
-
-	@Value("${aws.region}")
-	private String region;
 
 	public void uploadToS3(Exchange exchange) {
 

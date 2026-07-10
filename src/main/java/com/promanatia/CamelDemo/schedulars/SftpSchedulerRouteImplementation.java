@@ -6,26 +6,28 @@ import com.promanatia.CamelDemo.service.*;
 import com.promanatia.CamelDemo.utility.ApplicationLoggerService;
 import com.promanatia.CamelDemo.utility.CsvAggregationStrategy;
 import org.apache.camel.builder.RouteBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
-	private final SftpConfig sftpConfig;
+	private static final Logger logger = LoggerFactory.getLogger(SftpSchedulerRouteImplementation.class);
 
+	private final SftpConfig sftpConfig;
 	private final CsvAggregationStrategy csvAggregationStrategy;
 	private final CsvValidator csvValidatorService;
 	private final CsvMappingService csvMappingService;
 	private final S3UploadService s3UploadService;
 	private final ErrorCsvService errorCsvService;
 	private final ErrorFileUploadService errorFileUploadService;
-	private final SftpArchiveService sftpArchiveService;
 	private final ApplicationLoggerService loggerService;
 
 	public SftpSchedulerRouteImplementation(SftpConfig sftpConfig, CsvAggregationStrategy csvAggregationStrategy,
 			CsvValidator csvValidatorService, CsvMappingService csvMappingService, S3UploadService s3UploadService,
 			ErrorCsvService errorCsvService, ErrorFileUploadService errorFileUploadService,
-			SftpArchiveService sftpArchiveService, ApplicationLoggerService loggerService) {
+			ApplicationLoggerService loggerService) {
 
 		this.sftpConfig = sftpConfig;
 		this.csvAggregationStrategy = csvAggregationStrategy;
@@ -34,7 +36,6 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 		this.s3UploadService = s3UploadService;
 		this.errorCsvService = errorCsvService;
 		this.errorFileUploadService = errorFileUploadService;
-		this.sftpArchiveService = sftpArchiveService;
 		this.loggerService = loggerService;
 	}
 
@@ -42,7 +43,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 	public void configure() {
 
 		onException(Exception.class).log("Error processing file: ${header.CamelFileName}").log("${exception.message}")
-				.handled(true);
+				.handled(false);
 
 		from(sftpConfig.getSftpUri()).routeId("sftp-file-reader")
 
@@ -51,10 +52,15 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
 					FlowType flowType = FlowType.fromFileName(fileName);
 					exchange.setProperty("FLOW_TYPE", flowType);
+					logger.info("Started processing file : " + fileName);
 				})
 
-				.convertBodyTo(String.class).aggregate(exchangeProperty("FLOW_TYPE"), csvAggregationStrategy)
-				.completionSize(10).completionTimeout(15000)
+				.convertBodyTo(String.class).process(exchange -> {
+					String body = exchange.getIn().getBody(String.class);
+					int totalRows = body.split("\\r?\\n").length - 1;
+					logger.info("CSV loaded successfully. Total data rows : " + totalRows);
+				}).aggregate(exchangeProperty("FLOW_TYPE"), csvAggregationStrategy).completionSize(10)
+				.completionTimeout(15000)
 
 				.process(exchange -> {
 
@@ -63,6 +69,8 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					csvValidatorService.validateFile(rows);
 					String[] headers = rows[0].split(",", -1);
 					csvValidatorService.validateHeader(headers);
+					logger.info(exchange.getProperty("FLOW_TYPE", FlowType.class).name(),
+							"Header validation successful.");
 					exchange.setProperty("headers", headers);
 					exchange.setProperty("rows", rows);
 				}).process(exchange -> {
@@ -73,6 +81,8 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					java.util.List<String> errorRows = new java.util.ArrayList<>();
 					java.util.Set<String> failedOrders = new java.util.HashSet<>();
 
+					FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+
 					for (int i = 1; i < rows.length; i++) {
 						String row = rows[i];
 						if (row == null || row.trim().isEmpty()) {
@@ -81,12 +91,20 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
 						String[] cols = row.split(",", -1);
 						String documentNo = cols.length > 0 ? cols[0].replace("\"", "").trim() : "UNKNOWN";
-						loggerService.info("", "Sales Order", documentNo, "Started processing CSV file.");
+						String productId = cols.length > 0 ? cols[4].replace("\"", "").trim() : "UNKNOWN";
+
+						logger.info(productId, flowType.name(), documentNo, "Started processing CSV file.");
 
 						try {
 							csvValidatorService.validateRow(cols, headers, i, row);
+							logger.info(productId, flowType.name(), documentNo,
+									"Rows " + i + "validated successfully.");
 						} catch (Exception e) {
 							failedOrders.add(documentNo);
+							logger.error("Validation failed Reason : " + e.getMessage());
+							loggerService.error(productId, flowType.name(), documentNo,
+									"Error processing CSV columnn file.", e.getMessage());
+
 						}
 					}
 
@@ -128,7 +146,6 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 				.toD("aws2-s3://{{aws.bucket.name}}" + "?accessKey=RAW({{aws.access.key}})"
 						+ "&secretKey=RAW({{aws.secret.key}})" + "&region={{aws.region}}")
 
-				.process(errorCsvService::generateErrorCsv).process(errorFileUploadService::uploadErrorFile)
-				.toD("${exchangeProperty.ERROR_SFTP_URI}").process(sftpArchiveService::archiveProcessedFiles);
+				.process(errorCsvService::generateErrorCsv).process(errorFileUploadService::uploadErrorFile);
 	}
 }
