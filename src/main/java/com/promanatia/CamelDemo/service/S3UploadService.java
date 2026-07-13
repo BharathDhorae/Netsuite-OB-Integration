@@ -12,8 +12,15 @@ public class S3UploadService {
 
 	@Value("${aws.bucket.name}")
 	private String bucketName;
+	
+	private final S3Config s3Config;
+	
+	public S3UploadService(S3Config s3Config) {
+		this.s3Config = s3Config;
+	}
 
-	public void uploadToS3(Exchange exchange) {
+
+	public void uploadSuccessFile(Exchange exchange) {
 
 		String csvContent = exchange.getProperty("mappedCsv", String.class);
 		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
@@ -24,7 +31,7 @@ public class S3UploadService {
 
 		String fileName = buildFileName(flowType);
 		exchange.getIn().setBody(csvContent);
-		exchange.getIn().setHeader("CamelAwsS3Key", fileName);
+		exchange.getIn().setHeader("CamelAwsS3Key", s3Config.getInFolder() + fileName);
 		exchange.getIn().setHeader("CamelAwsS3BucketName", bucketName);
 		exchange.getIn().setHeader("CamelAwsS3ContentType", "text/csv");
 		exchange.setProperty("S3_FILE_NAME", fileName);
@@ -32,6 +39,20 @@ public class S3UploadService {
 
 	private String buildFileName(FlowType flowType) {
 		String timestamp = String.valueOf(System.currentTimeMillis());
-		return "test/" + flowType.getOutputFileName() + "_" + timestamp + ".csv";
+		return flowType.getOutputFileName() + "_" + timestamp + ".csv";
 	}
+	
+	public void uploadErrorFile(Exchange exchange) {
+
+		String errorCsv = exchange.getProperty("errorCsv", String.class);
+		Boolean hasFailed = exchange.getProperty("hasFailedOrders", Boolean.class);
+		if (hasFailed == null || !hasFailed || errorCsv == null) {
+			return;
+		}
+
+		String fileName = exchange.getProperty("ERROR_FILE_NAME", String.class);
+		exchange.getIn().setBody(errorCsv);
+		exchange.getIn().setHeader("CamelAwsS3Key", s3Config.getErrorFolder() + fileName);
+	}
+
 }

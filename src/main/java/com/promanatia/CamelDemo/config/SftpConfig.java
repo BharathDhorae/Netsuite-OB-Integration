@@ -1,5 +1,9 @@
 package com.promanatia.CamelDemo.config;
 
+import static org.apache.camel.builder.endpoint.StaticEndpointBuilders.sftp;
+
+import org.apache.camel.builder.EndpointConsumerBuilder;
+import org.apache.camel.builder.EndpointProducerBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,32 +43,18 @@ public class SftpConfig {
 	@Value("${sftp.remote.incoming-directory}")
 	private String inDirectory;
 
-	public String getSftpUri() {
-		return String.format(
-				"sftp://%s:%d%s?username=%s&password=%s&include=%s&delay=%d&move=%s/${file:name}&moveFailed=%s/${file:name}&readLock=changed",
-				host, port, remoteDirectory, username, password, include, delay, archiveDirectory, errorDirectory);
+	public EndpointConsumerBuilder getSftpEndpoint() {
+		return sftp(host + ":" + port + remoteDirectory).username(username).password(password).include(include)
+				.delay(delay).move(archiveDirectory + "/${file:name}").moveFailed(errorDirectory + "/${file:name}")
+				.readLock("changed");
 	}
 
-	public String getErrorSftpUri() {
-		return String.format("sftp://%s:%d%s?username=%s&password=%s&binary=true", host, port, errorDirectory, username,
-				password);
+	public EndpointProducerBuilder getErrorSftpEndpoint() {
+		return sftp(host + ":" + port + errorDirectory).username(username).password(password).binary(true);
 	}
 
-	public String getSftpSourceUri(String fileName) {
-		return String.format("sftp://%s:%d%s/%s?username=%s&password=%s&binary=true", host, port, remoteDirectory,
-				fileName, username, password);
-	}
-
-	public String getArchiveUri(String fileName) {
-		return String.format("sftp://%s:%d%s/%s?username=%s&password=%s&binary=true", host, port, archiveDirectory,
-				fileName, username, password);
-	}
-
-	public String getInSftpUri() {
-
-		return String.format("sftp://%s:%d%s?username=%s&password=%s&binary=true", host, port, inDirectory, username,
-				password);
-
+	public EndpointProducerBuilder getInSftpEndpoint() {
+		return sftp(host + ":" + port + inDirectory).username(username).password(password).binary(true);
 	}
 
 }

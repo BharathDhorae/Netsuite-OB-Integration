@@ -6,12 +6,26 @@ import org.apache.camel.Exchange;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ErrorFileUploadService {
+public class SftpUploadService {
 
 	private final SftpConfig sftpConfig;
 
-	public ErrorFileUploadService(SftpConfig sftpConfig) {
+	public SftpUploadService(SftpConfig sftpConfig) {
 		this.sftpConfig = sftpConfig;
+	}
+
+	public void uploadSuccessFile(Exchange exchange) {
+
+		String csv = exchange.getProperty("mappedCsv", String.class);
+		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+
+		if (csv == null || csv.isBlank()) {
+			throw new RuntimeException("Mapped CSV is empty");
+		}
+
+		String fileName = flowType.getOutputFileName() + "_" + System.currentTimeMillis() + ".csv";
+		exchange.getIn().setBody(csv);
+		exchange.getIn().setHeader("CamelFileName", fileName);
 	}
 
 	public void uploadErrorFile(Exchange exchange) {
@@ -30,11 +44,11 @@ public class ErrorFileUploadService {
 
 		exchange.getIn().setBody(errorCsv);
 		exchange.getIn().setHeader("CamelFileName", fileName);
-		exchange.setProperty("ERROR_SFTP_URI", sftpConfig.getErrorSftpUri());
 	}
 
 	private String buildFallbackFileName(FlowType flowType) {
 		String timestamp = String.valueOf(System.currentTimeMillis());
 		return flowType.getOutputFileName() + "_ERROR_" + timestamp + ".csv";
 	}
+
 }

@@ -18,6 +18,9 @@ public class S3Config {
 	@Value("${aws.region}")
 	private String region;
 
+	@Value("${s3.in.folder}")
+	private String inFolder;
+
 	@Value("${s3.out.folder}")
 	private String outFolder;
 
@@ -50,5 +53,9 @@ public class S3Config {
 
 	public String getArchiveFolder() {
 		return archiveFolder;
+	}
+
+	public String getInFolder() {
+		return inFolder;
 	}
 }

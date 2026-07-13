@@ -1,6 +1,5 @@
 package com.promanatia.CamelDemo.utility;
 
-import com.promanatia.CamelDemo.DTO.FlowType;
 import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.springframework.stereotype.Component;
@@ -19,7 +18,6 @@ public class CsvAggregationStrategy implements AggregationStrategy {
 		try {
 
 			String fileName = newExchange.getIn().getHeader("CamelFileName", String.class);
-			FlowType flowType = newExchange.getProperty("FLOW_TYPE", FlowType.class);
 			String body = newExchange.getIn().getBody(String.class);
 			if (body == null || body.trim().isEmpty()) {
 				return oldExchange != null ? oldExchange : newExchange;
