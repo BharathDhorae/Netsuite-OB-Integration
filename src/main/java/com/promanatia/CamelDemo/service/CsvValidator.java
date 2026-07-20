@@ -1,14 +1,13 @@
 package com.promanatia.CamelDemo.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
+
+import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
 
 @Service
 public class CsvValidator {
-
-	private static final int DESCRIPTION_INDEX = 5;
-	private static final int DEPARTMENT_INDEX = 11;
-	private static final int LOCATION_INDEX = 14;
-	private static final int INDEX = 15;
 
 	public void validateFile(String[] rows) {
 
@@ -28,7 +27,8 @@ public class CsvValidator {
 	/**
 	 * Validate each row based on headers
 	 */
-	public void validateRow(String[] columns, String[] headers, int rowNum, String row) {
+	public void validateRow(String[] columns, String[] headers, int rowNum, String row,
+			List<FieldMappingEntity> fieldMappings) {
 
 		if (columns == null || columns.length == 0) {
 			throw new RuntimeException("Empty row found at Row " + (rowNum + 1));
@@ -37,7 +37,7 @@ public class CsvValidator {
 		for (int colNum = 0; colNum < headers.length; colNum++) {
 
 			// Skip optional columns
-			if (isOptionalColumn(colNum)) {
+			if ("N".equalsIgnoreCase(isOptionalColumn(colNum, fieldMappings))) {
 				continue;
 			}
 
@@ -58,8 +58,8 @@ public class CsvValidator {
 	/**
 	 * Optional column rules (same as your logic)
 	 */
-	private boolean isOptionalColumn(int colNum) {
-		return colNum == DESCRIPTION_INDEX || colNum == DEPARTMENT_INDEX || colNum == LOCATION_INDEX || colNum == INDEX;
+	private String isOptionalColumn(int colNum, List<FieldMappingEntity> fieldMappings) {
+		return fieldMappings.get(colNum).getMandatory();
 	}
 
 	/**
@@ -103,9 +103,9 @@ public class CsvValidator {
 	/**
 	 * Validate CSV header row
 	 */
-	public void validateHeader(String[] headers) {
+	public void validateHeader(String[] headers, List<FieldMappingEntity> fieldMappings) {
 
-		if (headers == null || headers.length == 0) {
+		if (headers == null || headers.length == 0 || headers.length != fieldMappings.size()) {
 			throw new RuntimeException("CSV header is missing or empty");
 		}
 
@@ -113,6 +113,9 @@ public class CsvValidator {
 
 			if (headers[i] == null || headers[i].trim().isEmpty()) {
 				throw new RuntimeException("Empty header found at column index: " + i);
+			}
+			if (!headers[i].equalsIgnoreCase(fieldMappings.get(i).getSourceColumn())) {
+				throw new RuntimeException("Header column mismatch with table coulum : " + i);
 			}
 		}
 	}

@@ -9,5 +9,6 @@ public class FieldMappingEntity {
 	private String targetColumn;
 	private String transformationRuleCode;
 	private Integer sequenceNo;
+	private String mandatory;
 
 }

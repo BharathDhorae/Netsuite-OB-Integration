@@ -39,7 +39,6 @@ public class CsvAggregationStrategy implements AggregationStrategy {
 				if (newRows[i] == null || newRows[i].trim().isEmpty()) {
 					continue;
 				}
-
 				merged.append("\n").append(newRows[i]);
 			}
 
@@ -53,9 +52,7 @@ public class CsvAggregationStrategy implements AggregationStrategy {
 			if (!files.contains(fileName)) {
 				files.add(fileName);
 			}
-
 			oldExchange.setProperty(PROCESSED_FILES, files);
-
 			return oldExchange;
 
 		} catch (Exception e) {

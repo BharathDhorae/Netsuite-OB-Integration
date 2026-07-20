@@ -58,4 +58,12 @@ public class S3Config {
 	public String getInFolder() {
 		return inFolder;
 	}
+
+	public String getOutFolder() {
+		return outFolder;
+	}
+
+	public String getBucketName() {
+		return bucketName;
+	}
 }

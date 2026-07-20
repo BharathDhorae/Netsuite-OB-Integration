@@ -1,29 +1,30 @@
 package com.promanatia.CamelDemo.service;
 
-import com.promanatia.CamelDemo.DTO.FlowType;
-import com.promanatia.CamelDemo.config.SftpConfig;
+import com.promanatia.CamelDemo.DTO.EntityMasterDTO;
+import com.promanatia.CamelDemo.utility.FileNameGenerator;
+
 import org.apache.camel.Exchange;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SftpUploadService {
 
-	private final SftpConfig sftpConfig;
+	private final FileNameGenerator fileNameGenerator;
 
-	public SftpUploadService(SftpConfig sftpConfig) {
-		this.sftpConfig = sftpConfig;
+	public SftpUploadService(FileNameGenerator fileNameGenerator) {
+		this.fileNameGenerator = fileNameGenerator;
 	}
 
 	public void uploadSuccessFile(Exchange exchange) {
 
 		String csv = exchange.getProperty("mappedCsv", String.class);
-		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 
 		if (csv == null || csv.isBlank()) {
 			throw new RuntimeException("Mapped CSV is empty");
 		}
 
-		String fileName = flowType.getOutputFileName() + "_" + System.currentTimeMillis() + ".csv";
+		String fileName = fileNameGenerator.buildSuccessFileName(entity);
 		exchange.getIn().setBody(csv);
 		exchange.getIn().setHeader("CamelFileName", fileName);
 	}
@@ -32,23 +33,17 @@ public class SftpUploadService {
 
 		String errorCsv = exchange.getProperty("errorCsv", String.class);
 		Boolean hasFailed = exchange.getProperty("hasFailedOrders", Boolean.class);
-		FlowType flowType = exchange.getProperty("FLOW_TYPE", FlowType.class);
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 		if (hasFailed == null || !hasFailed || errorCsv == null || errorCsv.isBlank()) {
 			return;
 		}
 
 		String fileName = exchange.getProperty("ERROR_FILE_NAME", String.class);
 		if (fileName == null) {
-			fileName = buildFallbackFileName(flowType);
+			fileName = fileNameGenerator.buildErrorFileName(entity);
 		}
 
 		exchange.getIn().setBody(errorCsv);
 		exchange.getIn().setHeader("CamelFileName", fileName);
 	}
-
-	private String buildFallbackFileName(FlowType flowType) {
-		String timestamp = String.valueOf(System.currentTimeMillis());
-		return flowType.getOutputFileName() + "_ERROR_" + timestamp + ".csv";
-	}
-
 }
