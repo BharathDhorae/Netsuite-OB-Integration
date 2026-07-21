@@ -107,6 +107,7 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 					String[] rows = fileContent.split("\\r?\\n");
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 					List<FieldMappingEntity> mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
+					exchange.setProperty("mappings", mappings);
 					csvValidatorService.validateFile(rows);
 					String[] headers = csvParser.parseCsvLine(rows[0]);
 					csvValidatorService.validateHeader(headers, mappings);
@@ -122,8 +123,7 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 					List<String> errorRows = new ArrayList<>();
 					Set<String> failedOrders = new HashSet<>();
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
-					;
-					List<FieldMappingEntity> mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
+					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
 					for (int i = 1; i < rows.length; i++) {
 						String row = rows[i];
 						if (row == null || row.trim().isEmpty()) {
@@ -133,13 +133,18 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 						String[] cols = csvParser.parseCsvLine(row);
 						String documentNo = cols.length > 0 ? cols[0].replace("\"", "").trim() : "UNKNOWN";
 						String productId = cols.length > 0 ? cols[4].replace("\"", "").trim() : "UNKNOWN";
-						try {
-							csvValidatorService.validateRow(cols, headers, i, row, mappings);
-						} catch (Exception e) {
-							log.warn("DIAGNOSTIC row {} FAILED validation. documentNo={}, reason={}, row={}", i,
-									documentNo, e.getMessage(), row);
+						List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i, row,
+								mappings);
+
+						if (!validationErrors.isEmpty()) {
+
+							String errorMessage = String.join(", ", validationErrors);
+
+							log.warn("Row {} validation failed. documentNo={}, errors={}", i, documentNo, errorMessage);
+
 							loggerService.error(productId, entity.getSourceTableName(), documentNo,
-									"Error processing CSV columnn file.", e.getMessage());
+									"Error processing CSV file.", errorMessage);
+
 							failedOrders.add(documentNo);
 						}
 					}

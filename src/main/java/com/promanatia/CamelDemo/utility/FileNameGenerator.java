@@ -8,10 +8,10 @@ import com.promanatia.CamelDemo.DTO.EntityMasterDTO;
 public class FileNameGenerator {
 
 	public String buildSuccessFileName(EntityMasterDTO entity) {
-		return entity.getTargetObjectName() + "_" + System.currentTimeMillis() + ".csv";
+		return entity.getEntityName() + "_" + System.currentTimeMillis() + ".csv";
 	}
 
 	public String buildErrorFileName(EntityMasterDTO entity) {
-		return entity.getSourceTableName() + "_ERROR_" + System.currentTimeMillis() + ".csv";
+		return entity.getEntityName() + "_ERROR_" + System.currentTimeMillis() + ".csv";
 	}
 }

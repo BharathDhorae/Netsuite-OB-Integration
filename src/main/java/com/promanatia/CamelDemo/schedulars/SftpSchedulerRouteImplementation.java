@@ -203,24 +203,32 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 						logger.info(productId, entity.getEntityName(), documentNo, "Started processing CSV file.");
 
 						try {
-							csvValidatorService.validateRow(cols, headers, i, row, mappings);
-							logger.info(productId, entity.getEntityName(), documentNo,
-									"Rows " + i + "validated successfully.");
+
+							List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i, row,
+									mappings);
+
+							if (!validationErrors.isEmpty()) {
+
+								failedOrders.add(documentNo);
+								String errorMessage = String.join(" | ", validationErrors);
+								logger.error("Validation failed for Row {} : {}", i + 1, errorMessage);
+								loggerService.error(productId, entity.getEntityName(),
+										documentNo,
+										"CSV Validation Failed", errorMessage);
+
+							} else {
+
+								logger.info(productId, entity.getEntityName(), documentNo,
+										"Row {} validated successfully.", i + 1);
+							}
 						} catch (Exception e) {
 							if (isInfrastructureFailure(e)) {
-								// DB/network blip mid-file: abort the whole file, don't
-								// mark every remaining row as "invalid data".
-								logger.error("Infrastructure failure during row validation, aborting file: "
-										+ e.getMessage());
-								throw wrapAsInfrastructure("Infrastructure failure validating row " + i
+								logger.error("Infrastructure failure during row validation, aborting file: {}",
+										e.getMessage());
+								throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 1)
 										+ " of file for entity " + entity.getEntityName(), e);
 							}
-
-							failedOrders.add(documentNo);
-							logger.error("Validation failed Reason : " + e.getMessage());
-							loggerService.error(productId, entity.getEntityName(), documentNo,
-									"Error processing CSV columnn file.", e.getMessage());
-
+							throw e;
 						}
 					}
 

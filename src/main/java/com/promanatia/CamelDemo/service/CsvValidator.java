@@ -1,5 +1,6 @@
 package com.promanatia.CamelDemo.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -27,11 +28,14 @@ public class CsvValidator {
 	/**
 	 * Validate each row based on headers
 	 */
-	public void validateRow(String[] columns, String[] headers, int rowNum, String row,
+	public List<String> validateRow(String[] columns, String[] headers, int rowNum, String row,
 			List<FieldMappingEntity> fieldMappings) {
 
+		List<String> errors = new ArrayList<>();
+
 		if (columns == null || columns.length == 0) {
-			throw new RuntimeException("Empty row found at Row " + (rowNum + 1));
+			errors.add("Empty row found at Row " + (rowNum + 1));
+			return errors;
 		}
 
 		for (int colNum = 0; colNum < headers.length; colNum++) {
@@ -43,16 +47,18 @@ public class CsvValidator {
 
 			// Missing column
 			if (colNum >= columns.length) {
-				throw new RuntimeException("Missing column '" + getColumnName(headers, colNum) + "' at Row "
-						+ (rowNum + 1) + ". Row Data: " + row);
+				errors.add("Missing column '" + getColumnName(headers, colNum) + "' at Row " + (rowNum + 1));
+				continue;
 			}
 
-			// Empty value check
+			// Empty value
 			if (isEmpty(columns[colNum])) {
-				throw new RuntimeException("Empty value found in Column '" + getColumnName(headers, colNum)
-						+ "' at Row " + (rowNum + 1) + ". Row Data: " + row);
+				errors.add(
+						"Empty value found in Column '" + getColumnName(headers, colNum) + "' at Row " + (rowNum + 1));
 			}
 		}
+
+		return errors;
 	}
 
 	/**
