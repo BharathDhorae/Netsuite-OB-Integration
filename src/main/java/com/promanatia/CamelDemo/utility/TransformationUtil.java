@@ -1,5 +1,6 @@
 package com.promanatia.CamelDemo.utility;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -11,8 +12,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class TransformationUtil {
 
-	private static final DateTimeFormatter INPUT_DATE_FORMATTER = new DateTimeFormatterBuilder()
+	private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
 			.appendPattern("yyyy-MM-dd HH:mm:ss").appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).toFormatter();
+
+	private static final DateTimeFormatter DATE_FORMATTER1 = DateTimeFormatter.ofPattern("M/d/yyyy");
+
+	private static final DateTimeFormatter DATE_FORMATTER2 = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+
+	private static final DateTimeFormatter DATE_FORMATTER3 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	private static final DateTimeFormatter OUTPUT_DATE_FORMATTER = DateTimeFormatter.ofPattern("MMddyyyy");
 	private static final DateTimeFormatter OUTPUT_MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMM-yy",
@@ -46,8 +53,7 @@ public class TransformationUtil {
 			return "";
 		}
 
-		LocalDateTime dateTime = LocalDateTime.parse(value.trim(), INPUT_DATE_FORMATTER);
-		return dateTime.format(OUTPUT_DATE_FORMATTER);
+		return parseDate(value).format(OUTPUT_DATE_FORMATTER);
 	}
 
 	private String convertMonthYear(String value) {
@@ -56,8 +62,34 @@ public class TransformationUtil {
 			return "";
 		}
 
-		LocalDateTime dateTime = LocalDateTime.parse(value.trim(), INPUT_DATE_FORMATTER);
-		return dateTime.format(OUTPUT_MONTH_YEAR_FORMATTER);
+		return parseDate(value).format(OUTPUT_MONTH_YEAR_FORMATTER);
+	}
+
+	private LocalDate parseDate(String value) {
+
+		value = value.trim();
+
+		try {
+			return LocalDateTime.parse(value, DATE_TIME_FORMATTER).toLocalDate();
+		} catch (Exception ignored) {
+		}
+
+		try {
+			return LocalDate.parse(value, DATE_FORMATTER1);
+		} catch (Exception ignored) {
+		}
+
+		try {
+			return LocalDate.parse(value, DATE_FORMATTER2);
+		} catch (Exception ignored) {
+		}
+
+		try {
+			return LocalDate.parse(value, DATE_FORMATTER3);
+		} catch (Exception ignored) {
+		}
+
+		throw new RuntimeException("Unsupported date format : " + value);
 	}
 
 }

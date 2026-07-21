@@ -212,8 +212,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 								failedOrders.add(documentNo);
 								String errorMessage = String.join(" | ", validationErrors);
 								logger.error("Validation failed for Row {} : {}", i + 1, errorMessage);
-								loggerService.error(productId, entity.getEntityName(),
-										documentNo,
+								loggerService.error(productId, entity.getEntityName(), documentNo,
 										"CSV Validation Failed", errorMessage);
 
 							} else {
