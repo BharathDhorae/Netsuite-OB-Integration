@@ -10,5 +10,6 @@ public class FieldMappingEntity {
 	private String transformationRuleCode;
 	private Integer sequenceNo;
 	private String mandatory;
+	private String defaultValue;
 
 }
