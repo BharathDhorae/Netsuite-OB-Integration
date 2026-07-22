@@ -36,8 +36,6 @@ public class TransformationUtil {
 
 	private static final DateTimeFormatter DATE_FORMATTER3 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-	private static final DateTimeFormatter OUTPUT_DATE_FORMATTER = DateTimeFormatter.ofPattern("MMddyyyy");
-
 	private static final DateTimeFormatter OUTPUT_MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMM-yy",
 			Locale.ENGLISH);
 
@@ -126,7 +124,7 @@ public class TransformationUtil {
 
 		String documentNo = getColumnValue(headers, columns, "documentno");
 
-		return (documentNo == null ? "" : documentNo.trim()) + getSubsidiary(columns, headers);
+		return (documentNo == null ? "" : documentNo.trim()) + "-" + getSubsidiary(columns, headers);
 	}
 
 	/**

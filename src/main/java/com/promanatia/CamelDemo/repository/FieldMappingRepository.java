@@ -24,7 +24,8 @@ public class FieldMappingRepository {
 				    target_column,
 				    transformation_rule_code,
 				    sequence_no,
-				    mandatory
+				    mandatory,
+				    default_value
 				FROM int_m_field_mapping
 				WHERE source_table = ? and active = 'Y'
 				ORDER BY sequence_no
@@ -39,6 +40,7 @@ public class FieldMappingRepository {
 			mapping.setTransformationRuleCode(rs.getString("transformation_rule_code"));
 			mapping.setSequenceNo(rs.getInt("sequence_no"));
 			mapping.setMandatory(rs.getString("mandatory"));
+			mapping.setDefaultValue(rs.getString("default_value"));
 
 			return mapping;
 
