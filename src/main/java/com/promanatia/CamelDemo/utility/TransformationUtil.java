@@ -165,7 +165,7 @@ public class TransformationUtil {
 
 	private String getVendorExternalId(String[] columns, String[] headers) {
 
-		OrgSubsidaryDto dto = getOrgSubsidary(columns, headers);
+		OrgSubsidaryDto dto = getBusinessPartnerOrg(columns, headers);
 
 		if (dto == null) {
 			return "";

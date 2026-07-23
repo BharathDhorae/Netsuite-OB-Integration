@@ -1,6 +1,7 @@
 package com.promanatia.CamelDemo.repository;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -18,8 +19,13 @@ public class OrgSubsidaryRepository {
 	public OrgSubsidaryDto findByEntityName(String orgName) {
 
 		String sql = """
-				SELECT ad_org_name,subsidiary,
-				aksharpith_subsidiary,itemLine_location
+				SELECT ad_org_name,
+				       subsidiary,
+				       aksharpith_subsidiary,
+				       itemline_location,
+				       internal_vendor,
+				       financial_location,
+				       internal_customer
 				FROM ob_ns_org_v3
 				WHERE ad_org_name=?
 				AND isactive='Y'
@@ -31,7 +37,10 @@ public class OrgSubsidaryRepository {
 			entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
 			entity.setSubsidary(rs.getString("subsidiary"));
 			entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
-			entity.setItemLineLocation(rs.getString("itemLine_location"));
+			entity.setItemLineLocation(rs.getString("itemline_location"));
+			entity.setInternalVendor(rs.getString("internal_vendor"));
+			entity.setFinancialLocation(rs.getString("financial_location"));
+			entity.setInternalCustomer(rs.getString("internal_customer"));
 
 			return entity;
 		}, orgName);
@@ -53,6 +62,7 @@ public class OrgSubsidaryRepository {
 				LIMIT 1
 				""";
 
+		try {
 		return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 
 			OrgSubsidaryDto entity = new OrgSubsidaryDto();
@@ -66,6 +76,9 @@ public class OrgSubsidaryRepository {
 
 			return entity;
 		}, businessPartner);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 
 }
