@@ -67,7 +67,7 @@ public class TransformationUtil {
 
 		case "DATE_MMDDYYYY" -> convertDate(value);
 
-		case "DATE_MMYYYY" -> convertMonthYear(value);
+		case "DATE_MMYYYY" -> convertMonthYear(columns, headers);
 
 		case "SUBSIDIARY" -> getSubsidiary(columns, headers);
 
@@ -335,13 +335,11 @@ public class TransformationUtil {
 	/**
 	 * Converts to MMM-yy
 	 */
-	private String convertMonthYear(String value) {
+	private String convertMonthYear(String[] columns, String[] headers) {
 
-		if (value == null || value.isBlank()) {
-			return "";
-		}
+		String dateInvoiced = getColumnValue(headers, columns, "DateInvoiced");
 
-		return parseDate(value).format(OUTPUT_MONTH_YEAR_FORMATTER);
+		return parseDate(dateInvoiced).format(OUTPUT_MONTH_YEAR_FORMATTER);
 	}
 
 	/**
