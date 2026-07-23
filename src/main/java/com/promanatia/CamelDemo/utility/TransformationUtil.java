@@ -13,18 +13,24 @@ import org.springframework.stereotype.Component;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
 import com.promanatia.CamelDemo.DTO.OrgSubsidaryDto;
+import com.promanatia.CamelDemo.DTO.ProductMasterDTO;
 import com.promanatia.CamelDemo.repository.OrgSubsidaryRepository;
+import com.promanatia.CamelDemo.repository.ProductMasterRepository;
 
 @Component
 public class TransformationUtil {
 
 	private final OrgSubsidaryRepository orgSubsidaryRepository;
+	private final ProductMasterRepository productMasterRepository;
 
 	// Cache to avoid repeated DB calls
 	private final Map<String, OrgSubsidaryDto> orgCache = new ConcurrentHashMap<>();
+	private final Map<String, ProductMasterDTO> prodCache = new ConcurrentHashMap<>();
 
-	public TransformationUtil(OrgSubsidaryRepository orgSubsidaryRepository) {
+	public TransformationUtil(OrgSubsidaryRepository orgSubsidaryRepository,
+			ProductMasterRepository productMasterRepository) {
 		this.orgSubsidaryRepository = orgSubsidaryRepository;
+		this.productMasterRepository = productMasterRepository;
 	}
 
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
@@ -69,6 +75,24 @@ public class TransformationUtil {
 
 		case "CUSTBODY_OB_INVOICE_NO" -> getCustbodyObInvoiceNo(columns, headers);
 
+		case "BUSINESSPARTNERNAME" -> getDepartment(columns, headers);
+
+		case "INTERCOMPANY" -> getInterCompany(columns, headers);
+
+		case "VENDOR_EXTERNAL_ID" -> getVendorExternalId(columns, headers);
+
+		case "VENDOR_SUBSIDIARY_EXTERNAL_ID" -> getVendorSubsidiaryExternalId(columns, headers);
+
+		case "VENDOR_FINANCIAL_LOCATION_EXTERNAL_ID" -> getVendorFinancialLocationExternalId(columns, headers);
+
+		case "INTERNAL_CUSTOMER" -> getInternalCustomer(columns, headers);
+
+		case "TABLEREF_PRODUCT_CLASS" -> getItemLineClass(columns, headers);
+
+		case "TABLEREF_PRODUCT_SUBCLASS" -> getItemLineSubClass(columns, headers);
+
+		case "TABLEREF_PRODUCT_PRODCATEGORY" -> getItemLineProdCategory(columns, headers);
+
 		default -> throw new RuntimeException("Unsupported transformation rule : " + ruleCode);
 		};
 	}
@@ -85,6 +109,147 @@ public class TransformationUtil {
 		}
 
 		return orgCache.computeIfAbsent(organization.trim(), orgSubsidaryRepository::findByEntityName);
+	}
+
+	/**
+	 * Returns productcategory from product mapping table based on Item searchkey
+	 */
+	private String getItemLineProdCategory(String[] columns, String[] headers) {
+		ProductMasterDTO dto = getProductSearchkey(columns, headers);
+		return dto == null ? "" : dto.getProductCategoryExternalId();
+	}
+
+	/**
+	 * Returns itemlinesubclass from product mapping table based on Item searchkey
+	 */
+	private String getItemLineSubClass(String[] columns, String[] headers) {
+		ProductMasterDTO dto = getProductSearchkey(columns, headers);
+		return dto == null ? "" : dto.getSubClassExternalId();
+	}
+
+	/**
+	 * Returns itemlineclass from product mapping table based on Item searchkey
+	 */
+	private String getItemLineClass(String[] columns, String[] headers) {
+		ProductMasterDTO dto = getProductSearchkey(columns, headers);
+		return dto == null ? "" : dto.getClassExternalId();
+	}
+
+	private ProductMasterDTO getProductSearchkey(String[] columns, String[] headers) {
+		String prodSearchKey = getColumnValue(headers, columns, "ProductSearchKey");
+
+		if (prodSearchKey == null || prodSearchKey.isBlank()) {
+			return null;
+		}
+
+		ProductMasterDTO product = prodCache.computeIfAbsent(prodSearchKey.trim(),
+				productMasterRepository::findByEntityName);
+
+		if (product == null) {
+			// Handle product not found
+			return null;
+		}
+
+		return product;
+	}
+
+	private String getInterCompany(String[] columns, String[] headers) {
+
+		String department = getDepartment(columns, headers);
+
+		return switch (department) {
+		case "3115", "3255" -> "True";
+		default -> "False";
+		};
+	}
+
+	private String getVendorExternalId(String[] columns, String[] headers) {
+
+		OrgSubsidaryDto dto = getOrgSubsidary(columns, headers);
+
+		if (dto == null) {
+			return "";
+		}
+
+		return switch (getDepartment(columns, headers)) {
+		case "3115", "3255" -> dto.getInternalVendor() == null ? "" : dto.getInternalVendor();
+		default -> "";
+		};
+	}
+
+	private OrgSubsidaryDto getBusinessPartnerOrg(String[] columns, String[] headers) {
+
+		String customerFirstName = getColumnValue(headers, columns, "BusinessPartnerFirstName");
+
+		if (customerFirstName == null || customerFirstName.isBlank()) {
+			return null;
+		}
+
+		return orgSubsidaryRepository.findByBusinessPartner(customerFirstName.trim());
+	}
+
+	private String getVendorSubsidiaryExternalId(String[] columns, String[] headers) {
+
+		String department = getDepartment(columns, headers);
+
+		if (!"3115".equals(department) && !"3255".equals(department)) {
+			return "";
+		}
+
+		OrgSubsidaryDto dto = getBusinessPartnerOrg(columns, headers);
+
+		return dto == null ? "" : dto.getAksharpithSubsidary();
+	}
+
+	private String getVendorFinancialLocationExternalId(String[] columns, String[] headers) {
+
+		String department = getDepartment(columns, headers);
+
+		if (!"3115".equals(department) && !"3255".equals(department)) {
+			return "";
+		}
+
+		OrgSubsidaryDto dto = getBusinessPartnerOrg(columns, headers);
+
+		return dto == null ? "" : dto.getFinancialLocation();
+	}
+
+	private String getInternalCustomer(String[] columns, String[] headers) {
+
+		String department = getDepartment(columns, headers);
+
+		if (!"3115".equals(department) && !"3255".equals(department)) {
+			return "";
+		}
+
+		OrgSubsidaryDto dto = getBusinessPartnerOrg(columns, headers);
+
+		return dto == null ? "" : dto.getInternalCustomer();
+	}
+
+	private String getDepartment(String[] columns, String[] headers) {
+
+		String businessPartnerName = getColumnValue(headers, columns, "BusinessPartnerFirstName");
+
+		if (businessPartnerName == null || businessPartnerName.isBlank()) {
+			return "3230"; // Retail
+		}
+
+		String name = businessPartnerName.toLowerCase();
+
+		if (name.contains("baps shayona")) {
+			return "3255"; // Shayona Centers
+		}
+
+		if (name.contains("baps swaminarayan sanstha")) {
+			return "3215"; // Mandir operations
+		}
+
+		if (name.contains("swaminarayan aksharpith")) {
+			return "3115"; // Aksharpith Centers
+		}
+
+		return "3230"; // Retail
 	}
 
 	/**

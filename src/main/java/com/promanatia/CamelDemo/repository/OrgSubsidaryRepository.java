@@ -37,4 +37,35 @@ public class OrgSubsidaryRepository {
 		}, orgName);
 	}
 
+	public OrgSubsidaryDto findByBusinessPartner(String businessPartner) {
+
+		String sql = """
+				SELECT ad_org_name,
+				       subsidiary,
+				       aksharpith_subsidiary,
+				       itemline_location,
+				       internal_vendor,
+				       financial_location,
+				       internal_customer
+				FROM ob_ns_org_v3
+				WHERE LOWER(ob_business_partner) LIKE LOWER(? || '%')
+				  AND isactive = 'Y'
+				LIMIT 1
+				""";
+
+		return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+
+			OrgSubsidaryDto entity = new OrgSubsidaryDto();
+			entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
+			entity.setSubsidary(rs.getString("subsidiary"));
+			entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
+			entity.setItemLineLocation(rs.getString("itemline_location"));
+			entity.setInternalVendor(rs.getString("internal_vendor"));
+			entity.setFinancialLocation(rs.getString("financial_location"));
+			entity.setInternalCustomer(rs.getString("internal_customer"));
+
+			return entity;
+		}, businessPartner);
+	}
+
 }

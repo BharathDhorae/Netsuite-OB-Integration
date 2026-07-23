@@ -8,4 +8,7 @@ public class OrgSubsidaryDto {
 	private String subsidary;
 	private String aksharpithSubsidary;
 	private String itemLineLocation;
+	private String internalVendor;
+	private String financialLocation;
+	private String internalCustomer;
 }
