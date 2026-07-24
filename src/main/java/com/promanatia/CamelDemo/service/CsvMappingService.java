@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
 import com.promanatia.CamelDemo.utility.CsvParser;
+import com.promanatia.CamelDemo.utility.RowContext;
 import com.promanatia.CamelDemo.utility.TransformationUtil;
 
 @Service
@@ -36,11 +37,11 @@ public class CsvMappingService {
 
 		// Data
 		for (String row : validRows) {
-			String[] columns = csvParser.parseCsvLine(row);
-			for (int i = 0; i < mappings.size(); i++) {
-				String value = transformationUtil.applyTransformation(columns, headers, mappings.get(i));
-				outputCsv.append(escapeCsv(value));
 
+			String[] columns = csvParser.parseCsvLine(row);
+			RowContext context = new RowContext(headers, columns);
+			for (int i = 0; i < mappings.size(); i++) {
+				outputCsv.append(escapeCsv(transformationUtil.applyTransformation(context, mappings.get(i))));
 				if (i < mappings.size() - 1) {
 					outputCsv.append(",");
 				}

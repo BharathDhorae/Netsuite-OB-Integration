@@ -46,12 +46,14 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 	private final CsvParser csvParser;
 	private final FieldMappingRepository fieldMappingRepository;
 	private final EntityMasterRepository entityMasterRepository;
+	private final LookupService lookupService;
 
 	public SftpSchedulerRouteImplementation(SftpConfig sftpConfig, S3Config s3Config,
 			CsvAggregationStrategy csvAggregationStrategy, CsvValidator csvValidatorService,
 			CsvMappingService csvMappingService, S3UploadService s3UploadService, ErrorCsvService errorCsvService,
 			ApplicationLoggerService loggerService, SftpUploadService sftpUploadService, CsvParser csvParser,
-			FieldMappingRepository fieldMappingRepository, EntityMasterRepository entityMasterRepository) {
+			FieldMappingRepository fieldMappingRepository, EntityMasterRepository entityMasterRepository,
+			LookupService lookupService) {
 
 		this.sftpConfig = sftpConfig;
 		this.s3Config = s3Config;
@@ -65,6 +67,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 		this.csvParser = csvParser;
 		this.fieldMappingRepository = fieldMappingRepository;
 		this.entityMasterRepository = entityMasterRepository;
+		this.lookupService = lookupService;
 	}
 
 	@Override
@@ -266,6 +269,8 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 						} catch (Exception e) {
 							throw wrapAsInfrastructure(
 									"Failed generating mapped CSV for " + entity.getSourceTableName(), e);
+						} finally {
+							lookupService.clearCache();
 						}
 					}
 				})
