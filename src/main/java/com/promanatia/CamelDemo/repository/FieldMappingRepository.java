@@ -1,7 +1,6 @@
 package com.promanatia.CamelDemo.repository;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +11,7 @@ public class FieldMappingRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public FieldMappingRepository(@Qualifier("mainJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public FieldMappingRepository(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 

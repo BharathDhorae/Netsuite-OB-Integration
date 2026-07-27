@@ -20,7 +20,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
@@ -192,6 +194,8 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
+					Map<String, String> targetToSourceColumn = mappings.stream().collect(
+							Collectors.toMap(FieldMappingEntity::getTargetColumn, FieldMappingEntity::getSourceColumn));
 					for (int i = 1; i < rows.length; i++) {
 						String row = rows[i];
 						if (row == null || row.trim().isEmpty()) {
@@ -200,8 +204,8 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 
 						String[] cols = csvParser.parseCsvLine(row);
 
-						String documentNo = cols.length > 0 ? cols[0].replace("\"", "").trim() : "UNKNOWN";
-						String productId = cols.length > 4 ? cols[4].replace("\"", "").trim() : "UNKNOWN";
+						String documentNo = getColumnValue(headers, cols, targetToSourceColumn.get("externalId"));
+						String productId = getColumnValue(headers, cols, targetToSourceColumn.get("itemLine_item"));
 
 						logger.info(productId, entity.getEntityName(), documentNo, "Started processing CSV file.");
 
@@ -241,8 +245,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 						}
 
 						String[] cols = csvParser.parseCsvLine(row);
-						String documentNo = cols.length > 0 ? cols[0].replace("\"", "").trim() : "UNKNOWN";
-
+						String documentNo = getColumnValue(headers, cols, targetToSourceColumn.get("externalId"));
 						if (failedOrders.contains(documentNo)) {
 							errorRows.add(row);
 						} else {
@@ -305,5 +308,16 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 			current = current.getCause();
 		}
 		return false;
+	}
+
+	private String getColumnValue(String[] headers, String[] cols, String columnName) {
+
+		for (int i = 0; i < headers.length; i++) {
+			if (headers[i].equalsIgnoreCase(columnName)) {
+				return i < cols.length ? cols[i].replace("\"", "").trim() : "";
+			}
+		}
+
+		return "";
 	}
 }

@@ -1,6 +1,5 @@
 package com.promanatia.CamelDemo.repository;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,7 +11,7 @@ public class EntityMasterRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public EntityMasterRepository(@Qualifier("mainJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public EntityMasterRepository(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 

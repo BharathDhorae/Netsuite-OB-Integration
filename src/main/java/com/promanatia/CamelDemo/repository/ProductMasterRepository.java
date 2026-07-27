@@ -1,6 +1,5 @@
 package com.promanatia.CamelDemo.repository;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -11,7 +10,7 @@ import com.promanatia.CamelDemo.DTO.ProductMasterDTO;
 public class ProductMasterRepository {
 	private final JdbcTemplate jdbcTemplate;
 
-	public ProductMasterRepository(@Qualifier("mainJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public ProductMasterRepository(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 

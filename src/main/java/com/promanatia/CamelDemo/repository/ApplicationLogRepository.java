@@ -1,7 +1,6 @@
 package com.promanatia.CamelDemo.repository;
 
 import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +9,7 @@ public class ApplicationLogRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public ApplicationLogRepository(@Qualifier("mainJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public ApplicationLogRepository(JdbcTemplate jdbcTemplate) {
 
 		this.jdbcTemplate = jdbcTemplate;
 	}
