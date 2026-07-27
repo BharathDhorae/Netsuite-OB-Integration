@@ -35,16 +35,16 @@ public class S3Config {
 
 	public String getReadUri() {
 
-		return String.format(
-				"aws2-s3://%s" + "?accessKey=RAW(%s)" + "&secretKey=RAW(%s)" + "&region=%s" + "&prefix=%s"
-						+ "&deleteAfterRead=false" + "&includeBody=true" + "&delay=%d",
-				bucketName, accessKey, secretKey, region, outFolder, pollDelay);
+		// amazonS3Client references the "s3Client" bean registered by
+		// S3ClientConfig, so no credentials appear in this URI (and therefore
+		// never get written to Camel's endpoint-URI log lines).
+		return String.format("aws2-s3://%s" + "?amazonS3Client=#s3Client" + "&prefix=%s" + "&deleteAfterRead=false"
+				+ "&includeBody=true" + "&delay=%d", bucketName, outFolder, pollDelay);
 	}
 
 	public String getWriteUri() {
 
-		return String.format("aws2-s3://%s" + "?accessKey=RAW(%s)" + "&secretKey=RAW(%s)" + "&region=%s", bucketName,
-				accessKey, secretKey, region);
+		return String.format("aws2-s3://%s" + "?amazonS3Client=#s3Client", bucketName);
 	}
 
 	public String getErrorFolder() {

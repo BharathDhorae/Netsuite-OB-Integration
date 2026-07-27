@@ -16,7 +16,7 @@ public class OrgSubsidaryRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	public OrgSubsidaryDto findByEntityName(String orgName) {
+	public OrgSubsidaryDto findByOrganizationName(String orgName) {
 
 		String sql = """
 				SELECT ad_org_name,
@@ -30,20 +30,23 @@ public class OrgSubsidaryRepository {
 				WHERE ad_org_name=?
 				AND isactive='Y'
 				""";
+		try {
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 
-		return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+				OrgSubsidaryDto entity = new OrgSubsidaryDto();
+				entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
+				entity.setSubsidary(rs.getString("subsidiary"));
+				entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
+				entity.setItemLineLocation(rs.getString("itemline_location"));
+				entity.setInternalVendor(rs.getString("internal_vendor"));
+				entity.setFinancialLocation(rs.getString("financial_location"));
+				entity.setInternalCustomer(rs.getString("internal_customer"));
 
-			OrgSubsidaryDto entity = new OrgSubsidaryDto();
-			entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
-			entity.setSubsidary(rs.getString("subsidiary"));
-			entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
-			entity.setItemLineLocation(rs.getString("itemline_location"));
-			entity.setInternalVendor(rs.getString("internal_vendor"));
-			entity.setFinancialLocation(rs.getString("financial_location"));
-			entity.setInternalCustomer(rs.getString("internal_customer"));
-
-			return entity;
-		}, orgName);
+				return entity;
+			}, orgName);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 
 	public OrgSubsidaryDto findByBusinessPartner(String businessPartner) {
@@ -63,19 +66,19 @@ public class OrgSubsidaryRepository {
 				""";
 
 		try {
-		return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 
-			OrgSubsidaryDto entity = new OrgSubsidaryDto();
-			entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
-			entity.setSubsidary(rs.getString("subsidiary"));
-			entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
-			entity.setItemLineLocation(rs.getString("itemline_location"));
-			entity.setInternalVendor(rs.getString("internal_vendor"));
-			entity.setFinancialLocation(rs.getString("financial_location"));
-			entity.setInternalCustomer(rs.getString("internal_customer"));
+				OrgSubsidaryDto entity = new OrgSubsidaryDto();
+				entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
+				entity.setSubsidary(rs.getString("subsidiary"));
+				entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
+				entity.setItemLineLocation(rs.getString("itemline_location"));
+				entity.setInternalVendor(rs.getString("internal_vendor"));
+				entity.setFinancialLocation(rs.getString("financial_location"));
+				entity.setInternalCustomer(rs.getString("internal_customer"));
 
-			return entity;
-		}, businessPartner);
+				return entity;
+			}, businessPartner);
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}

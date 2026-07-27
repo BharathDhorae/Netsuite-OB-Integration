@@ -15,7 +15,7 @@ public class ProductMasterRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	public ProductMasterDTO findByEntityName(String searchKey) {
+	public ProductMasterDTO findByProductSearchKey(String searchKey) {
 
 		String sql = """
 				SELECT classexternalid, productcategoryexternalid,subclassexternalid

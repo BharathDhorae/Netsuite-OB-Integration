@@ -32,7 +32,7 @@ public class LookupService {
 			return null;
 		}
 
-		return organizationCache.computeIfAbsent(organization.trim(), orgRepository::findByEntityName);
+		return organizationCache.computeIfAbsent(organization.trim(), orgRepository::findByOrganizationName);
 	}
 
 	public OrgSubsidaryDto getBusinessPartner(String bp) {
@@ -50,7 +50,7 @@ public class LookupService {
 			return null;
 		}
 
-		return productCache.computeIfAbsent(searchKey.trim(), productRepository::findByEntityName);
+		return productCache.computeIfAbsent(searchKey.trim(), productRepository::findByProductSearchKey);
 	}
 
 	public void clearCache() {

@@ -1,6 +1,7 @@
 package com.promanatia.CamelDemo.repository;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -25,19 +26,22 @@ public class EntityMasterRepository {
 				AND upper(target_system)=upper(?)
 				AND active='Y'
 				""";
+		try {
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
 
-		return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+				EntityMasterDTO entity = new EntityMasterDTO();
 
-			EntityMasterDTO entity = new EntityMasterDTO();
+				entity.setEntityId(rs.getLong("entity_id"));
+				entity.setEntityName(rs.getString("entity_name"));
+				entity.setSourceTableName(rs.getString("source_table_name"));
+				entity.setTargetObjectName(rs.getString("target_object_name"));
+				entity.setSourceSystem(rs.getString("source_system"));
+				entity.setTargetSystem(rs.getString("target_system"));
 
-			entity.setEntityId(rs.getLong("entity_id"));
-			entity.setEntityName(rs.getString("entity_name"));
-			entity.setSourceTableName(rs.getString("source_table_name"));
-			entity.setTargetObjectName(rs.getString("target_object_name"));
-			entity.setSourceSystem(rs.getString("source_system"));
-			entity.setTargetSystem(rs.getString("target_system"));
-
-			return entity;
-		}, entityName, sourceSystem, targetSystem);
+				return entity;
+			}, entityName, sourceSystem, targetSystem);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 }
