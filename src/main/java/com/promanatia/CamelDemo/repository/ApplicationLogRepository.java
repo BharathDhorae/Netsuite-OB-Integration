@@ -1,46 +1,40 @@
 package com.promanatia.CamelDemo.repository;
 
-import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
+import com.promanatia.CamelDemo.DTO.ApplicationLogDTO;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ApplicationLogRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
-    public ApplicationLogRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+	public ApplicationLogRepository(JdbcTemplate jdbcTemplate) {
 
-    public void save(ApplicationLogEntity log) {
+		this.jdbcTemplate = jdbcTemplate;
+	}
 
-        String sql = """
-                INSERT INTO application_logs
-                (
-                    log_time,
-                    product,
-                    flow_type,
-                    document_id,
-                    log_level,
-                    message,
-                    error_message
-                )
-                VALUES
-                (
-                    CURRENT_TIMESTAMP,
-                    ?, ?, ?, ?, ?, ?
-                )
-                """;
+	public void save(ApplicationLogDTO log) {
 
-        jdbcTemplate.update(
-                sql,
-                log.getProduct(),
-                log.getFlowType(),
-                log.getDocumentId(),
-                log.getLogLevel(),
-                log.getMessage(),
-                log.getErrorMessage()
-        );
-    }
+		String sql = """
+				INSERT INTO apache_application_logs
+				(
+				    log_time,
+				    product,
+				    flow_type,
+				    document_id,
+				    log_level,
+				    message,
+				    error_message
+				)
+				VALUES
+				(
+				    CURRENT_TIMESTAMP,
+				    ?, ?, ?, ?, ?, ?
+				)
+				""";
+
+		jdbcTemplate.update(sql, log.getProduct(), log.getFlowType(), log.getDocumentId(), log.getLogLevel(),
+				log.getMessage(), log.getErrorMessage());
+	}
 }
