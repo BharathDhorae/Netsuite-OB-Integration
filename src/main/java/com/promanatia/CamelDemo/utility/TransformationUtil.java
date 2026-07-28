@@ -2,7 +2,7 @@ package com.promanatia.CamelDemo.utility;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.transformation.TransformationFactory;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
 
@@ -20,7 +20,7 @@ public class TransformationUtil {
 		return new RowContext(headers, columns);
 	}
 
-	public String applyTransformation(RowContext row, FieldMappingEntity mapping) {
+	public String applyTransformation(RowContext row, FieldMappingDTO mapping) {
 
 		String ruleCode = mapping.getTransformationRuleCode();
 

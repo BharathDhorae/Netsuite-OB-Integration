@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.springframework.stereotype.Component;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.DateUtil;
 import com.promanatia.CamelDemo.utility.RowContext;
@@ -19,7 +19,7 @@ public class DueDateRule implements TransformationRule {
 	}
 
 	@Override
-	public String transform(RowContext row, FieldMappingEntity mapping) {
+	public String transform(RowContext row, FieldMappingDTO mapping) {
 
 		String invoiceDate = row.get("DateInvoiced");
 

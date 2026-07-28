@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApplicationLogEntity {
+public class ApplicationLogDTO {
 
 	private Long id;
 	private Timestamp logTime;

@@ -3,7 +3,7 @@ package com.promanatia.CamelDemo.DTO;
 import lombok.Data;
 
 @Data
-public class FieldMappingEntity {
+public class FieldMappingDTO {
 
 	private String sourceColumn;
 	private String targetColumn;

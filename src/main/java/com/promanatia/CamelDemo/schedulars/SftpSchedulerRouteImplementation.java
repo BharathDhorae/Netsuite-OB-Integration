@@ -1,7 +1,7 @@
 package com.promanatia.CamelDemo.schedulars;
 
 import com.promanatia.CamelDemo.DTO.EntityMasterDTO;
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.Exception.InfrastructureException;
 import com.promanatia.CamelDemo.Exception.RowValidationException;
@@ -10,9 +10,9 @@ import com.promanatia.CamelDemo.config.SftpConfig;
 import com.promanatia.CamelDemo.repository.EntityMasterRepository;
 import com.promanatia.CamelDemo.repository.FieldMappingRepository;
 import com.promanatia.CamelDemo.service.*;
-import com.promanatia.CamelDemo.utility.ApplicationLoggerService;
 import com.promanatia.CamelDemo.utility.CsvAggregationStrategy;
 import com.promanatia.CamelDemo.utility.CsvParser;
+import com.promanatia.CamelDemo.utility.CsvValidator;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -153,7 +153,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					int totalRows = body.split("\\r?\\n").length - 1;
 					logger.info("CSV loaded successfully. Total data rows : " + totalRows);
 				}).aggregate(exchangeProperty("entityName"), csvAggregationStrategy).completionSize(10)
-				.completionTimeout(15000)
+				.completionTimeout(15000).process(exchange -> lookupService.clearCache())
 
 				.process(exchange -> {
 
@@ -161,7 +161,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					String[] rows = fileContent.split("\\r?\\n");
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 
-					List<FieldMappingEntity> mappings;
+					List<FieldMappingDTO> mappings;
 					try {
 						mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
 					} catch (Exception e) {
@@ -193,9 +193,9 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					Set<String> failedOrders = new HashSet<>();
 
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
-					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
+					List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
 					Map<String, String> targetToSourceColumn = mappings.stream().collect(
-							Collectors.toMap(FieldMappingEntity::getTargetColumn, FieldMappingEntity::getSourceColumn));
+							Collectors.toMap(FieldMappingDTO::getTargetColumn, FieldMappingDTO::getSourceColumn));
 					for (int i = 1; i < rows.length; i++) {
 						String row = rows[i];
 						if (row == null || row.trim().isEmpty()) {
@@ -264,7 +264,7 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 					String[] headers = exchange.getProperty("headers", String[].class);
 					List<String> validRows = exchange.getProperty("validRows", List.class);
-					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
+					List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
 					if (validRows != null && !validRows.isEmpty()) {
 						try {
 							String mappedCsv = csvMappingService.generateMappedCsv(mappings, headers, validRows);
@@ -272,8 +272,6 @@ public class SftpSchedulerRouteImplementation extends RouteBuilder {
 						} catch (Exception e) {
 							throw wrapAsInfrastructure(
 									"Failed generating mapped CSV for " + entity.getSourceTableName(), e);
-						} finally {
-							lookupService.clearCache();
 						}
 					}
 				})

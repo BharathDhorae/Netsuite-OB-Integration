@@ -1,13 +1,13 @@
 package com.promanatia.CamelDemo.schedulars;
 
 import com.promanatia.CamelDemo.DTO.EntityMasterDTO;
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.config.S3Config;
 import com.promanatia.CamelDemo.service.*;
-import com.promanatia.CamelDemo.utility.ApplicationLoggerService;
 import com.promanatia.CamelDemo.utility.CsvAggregationStrategy;
 import com.promanatia.CamelDemo.utility.CsvParser;
+import com.promanatia.CamelDemo.utility.CsvValidator;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -106,7 +106,7 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 
 					String[] rows = fileContent.split("\\r?\\n");
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
-					List<FieldMappingEntity> mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
+					List<FieldMappingDTO> mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
 					exchange.setProperty("mappings", mappings);
 					csvValidatorService.validateFile(rows);
 					String[] headers = csvParser.parseCsvLine(rows[0]);
@@ -123,7 +123,7 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 					List<String> errorRows = new ArrayList<>();
 					Set<String> failedOrders = new HashSet<>();
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
-					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
+					List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
 					for (int i = 1; i < rows.length; i++) {
 						String row = rows[i];
 						if (row == null || row.trim().isEmpty()) {
@@ -177,7 +177,7 @@ public class S3SchedulerRouteImplementation extends RouteBuilder {
 					EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 					String[] headers = exchange.getProperty("headers", String[].class);
 					List<String> validRows = exchange.getProperty("validRows", List.class);
-					List<FieldMappingEntity> mappings = exchange.getProperty("mappings", List.class);
+					List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
 					if (validRows != null && !validRows.isEmpty()) {
 						String mappedCsv = csvMappingService.generateMappedCsv(mappings, headers, validRows);
 						exchange.setProperty("mappedCsv", mappedCsv);

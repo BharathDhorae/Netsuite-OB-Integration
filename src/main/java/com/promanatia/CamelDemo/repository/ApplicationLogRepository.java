@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.repository;
 
-import com.promanatia.CamelDemo.DTO.ApplicationLogEntity;
+import com.promanatia.CamelDemo.DTO.ApplicationLogDTO;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +14,7 @@ public class ApplicationLogRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	public void save(ApplicationLogEntity log) {
+	public void save(ApplicationLogDTO log) {
 
 		String sql = """
 				INSERT INTO apache_application_logs

@@ -2,7 +2,7 @@ package com.promanatia.CamelDemo.transformation.impl;
 
 import org.springframework.stereotype.Component;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;
 
@@ -21,7 +21,7 @@ public class CustbodyInvoiceRule implements TransformationRule {
 	}
 
 	@Override
-	public String transform(RowContext row, FieldMappingEntity mapping) {
+	public String transform(RowContext row, FieldMappingDTO mapping) {
 		String invoice = row.get("documentno");
 		String subsidiary = subsidiaryRule.transform(row, mapping);
 		return invoice + "-" + subsidiary;

@@ -2,7 +2,7 @@ package com.promanatia.CamelDemo.transformation.impl;
 
 import org.springframework.stereotype.Component;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.DTO.ProductMasterDTO;
 import com.promanatia.CamelDemo.service.LookupService;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
@@ -21,7 +21,7 @@ public class ProductClassRule extends BaseLookupRule implements TransformationRu
 	}
 
 	@Override
-	public String transform(RowContext row, FieldMappingEntity mapping) {
+	public String transform(RowContext row, FieldMappingDTO mapping) {
 		ProductMasterDTO dto = product(row);
 		return dto == null ? "" : dto.getClassExternalId();
 	}

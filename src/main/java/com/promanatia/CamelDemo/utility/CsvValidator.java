@@ -1,11 +1,11 @@
-package com.promanatia.CamelDemo.service;
+package com.promanatia.CamelDemo.utility;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 
 @Service
 public class CsvValidator {
@@ -29,7 +29,7 @@ public class CsvValidator {
 	 * Validate each row based on headers
 	 */
 	public List<String> validateRow(String[] columns, String[] headers, int rowNum, String row,
-			List<FieldMappingEntity> fieldMappings) {
+			List<FieldMappingDTO> fieldMappings) {
 
 		List<String> errors = new ArrayList<>();
 
@@ -64,7 +64,7 @@ public class CsvValidator {
 	/**
 	 * Optional column rules (same as your logic)
 	 */
-	private String isOptionalColumn(int colNum, List<FieldMappingEntity> fieldMappings) {
+	private String isOptionalColumn(int colNum, List<FieldMappingDTO> fieldMappings) {
 		return fieldMappings.get(colNum).getMandatory();
 	}
 
@@ -109,7 +109,7 @@ public class CsvValidator {
 	/**
 	 * Validate CSV header row
 	 */
-	public void validateHeader(String[] headers, List<FieldMappingEntity> fieldMappings) {
+	public void validateHeader(String[] headers, List<FieldMappingDTO> fieldMappings) {
 
 		if (headers == null || headers.length == 0 || headers.length != fieldMappings.size()) {
 			throw new RuntimeException("CSV header is missing or empty");

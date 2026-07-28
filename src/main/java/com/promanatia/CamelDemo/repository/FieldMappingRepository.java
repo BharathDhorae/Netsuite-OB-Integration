@@ -1,6 +1,6 @@
 package com.promanatia.CamelDemo.repository;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -15,7 +15,7 @@ public class FieldMappingRepository {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	public List<FieldMappingEntity> getMappings(String sourceTable) {
+	public List<FieldMappingDTO> getMappings(String sourceTable) {
 
 		String sql = """
 				SELECT
@@ -32,7 +32,7 @@ public class FieldMappingRepository {
 
 		return jdbcTemplate.query(sql, (rs, rowNum) -> {
 
-			FieldMappingEntity mapping = new FieldMappingEntity();
+			FieldMappingDTO mapping = new FieldMappingDTO();
 
 			mapping.setSourceColumn(rs.getString("source_column"));
 			mapping.setTargetColumn(rs.getString("target_column"));

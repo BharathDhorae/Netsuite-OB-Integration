@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.CamelDemo.DTO.FieldMappingEntity;
+import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.utility.CsvParser;
 import com.promanatia.CamelDemo.utility.RowContext;
 import com.promanatia.CamelDemo.utility.TransformationUtil;
@@ -20,7 +20,7 @@ public class CsvMappingService {
 		this.transformationUtil = transformationUtil;
 	}
 
-	public String generateMappedCsv(List<FieldMappingEntity> mappings, String[] headers, List<String> validRows) {
+	public String generateMappedCsv(List<FieldMappingDTO> mappings, String[] headers, List<String> validRows) {
 
 		StringBuilder outputCsv = new StringBuilder();
 
