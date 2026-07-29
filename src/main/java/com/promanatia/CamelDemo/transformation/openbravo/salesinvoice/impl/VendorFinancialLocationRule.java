@@ -1,4 +1,4 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 
@@ -9,15 +9,15 @@ import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;
 
 @Component
-public class VendorSubsidiaryRule extends BaseLookupRule implements TransformationRule {
+public class VendorFinancialLocationRule extends BaseLookupRule implements TransformationRule {
 
-	public VendorSubsidiaryRule(LookupService lookupService) {
+	public VendorFinancialLocationRule(LookupService lookupService) {
 		super(lookupService);
 	}
 
 	@Override
 	public String getRuleCode() {
-		return "VENDOR_SUBSIDIARY_EXTERNAL_ID";
+		return "VENDOR_FINANCIAL_LOCATION_EXTERNAL_ID";
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class VendorSubsidiaryRule extends BaseLookupRule implements Transformati
 		}
 
 		OrgSubsidaryDto dto = businessPartner(row);
-		return dto == null ? "" : dto.getAksharpithSubsidary();
+		return dto == null ? "" : dto.getFinancialLocation();
 	}
 
 }

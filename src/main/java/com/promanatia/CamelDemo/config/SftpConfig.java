@@ -22,9 +22,6 @@ public class SftpConfig {
 	@Value("${sftp.password}")
 	private String password;
 
-	@Value("${sftp.remote.directory}")
-	private String remoteDirectory;
-
 	@Value("${sftp.delete}")
 	private boolean delete;
 
@@ -34,27 +31,55 @@ public class SftpConfig {
 	@Value("${sftp.delay}")
 	private long delay;
 
-	@Value("${sftp.remote.error-directory}")
-	private String errorDirectory;
+	@Value("${sftp.ob.netsuite.outdirectory}")
+	private String outOBtoNetsuiteDirectory;
 
-	@Value("${sftp.remote.archive}")
-	private String archiveDirectory;
+	@Value("${sftp.ob.netsuite.indirectory}")
+	private String inOBtoNetsuiteDirectory;
 
-	@Value("${sftp.remote.incoming-directory}")
-	private String inDirectory;
+	@Value("${sftp.ob.netsuite.errordirectory}")
+	private String errorOBtoNetsuiteDirectory;
 
-	public EndpointConsumerBuilder getSftpEndpoint() {
-		return sftp(host + ":" + port + remoteDirectory).username(username).password(password).include(include)
-				.delay(delay).move(archiveDirectory + "/${file:name}").moveFailed(errorDirectory + "/${file:name}")
-				.readLock("changed");
+	@Value("${sftp.ob.netsuite.archivedirectory}")
+	private String archiveOBtoNetsuiteDirectory;
+
+	@Value("${sftp.netsuite.ob.outdirectory}")
+	private String outNetsuiteToOBDirectory;
+
+	@Value("${sftp.netsuite.ob.errordirectory}")
+	private String errorNetsuiteToOBDirectory;
+
+	@Value("${sftp.netsuite.ob.archivedirectory}")
+	private String archiveNetsuiteToOBDirectory;
+
+	@Value("${sftp.netsuite.ob.indirectory}")
+	private String inNetsuiteToOBDirectory;
+
+	public EndpointConsumerBuilder getObToNetsuiteSftpEndpoint() {
+		return sftp(host + ":" + port + outOBtoNetsuiteDirectory).username(username).password(password).include(include)
+				.delay(delay).move(archiveOBtoNetsuiteDirectory + "/${file:name}")
+				.moveFailed(errorOBtoNetsuiteDirectory + "/${file:name}").readLock("changed");
 	}
 
-	public EndpointProducerBuilder getErrorSftpEndpoint() {
-		return sftp(host + ":" + port + errorDirectory).username(username).password(password).binary(true);
+	public EndpointConsumerBuilder getNetsuiteToObSftpEndpoint() {
+		return sftp(host + ":" + port + outNetsuiteToOBDirectory).username(username).password(password).include(include)
+				.delay(delay).move(archiveNetsuiteToOBDirectory + "/${file:name}")
+				.moveFailed(errorNetsuiteToOBDirectory + "/${file:name}").readLock("changed");
 	}
 
-	public EndpointProducerBuilder getInSftpEndpoint() {
-		return sftp(host + ":" + port + inDirectory).username(username).password(password).binary(true);
+	public EndpointProducerBuilder getObToNetsuiteErrorSftpEndpoint() {
+		return sftp(host + ":" + port + errorOBtoNetsuiteDirectory).username(username).password(password).binary(true);
 	}
 
+	public EndpointProducerBuilder getNetsuiteToObErrorSftpEndpoint() {
+		return sftp(host + ":" + port + errorNetsuiteToOBDirectory).username(username).password(password).binary(true);
+	}
+
+	public EndpointProducerBuilder getObToNetsuiteInSftpEndpoint() {
+		return sftp(host + ":" + port + inOBtoNetsuiteDirectory).username(username).password(password).binary(true);
+	}
+
+	public EndpointProducerBuilder getNetsuiteToObInSftpEndpoint() {
+		return sftp(host + ":" + port + inNetsuiteToOBDirectory).username(username).password(password).binary(true);
+	}
 }

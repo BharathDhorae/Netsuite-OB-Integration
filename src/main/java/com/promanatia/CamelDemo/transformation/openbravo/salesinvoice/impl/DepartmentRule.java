@@ -1,23 +1,22 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
-import com.promanatia.CamelDemo.utility.DateUtil;
 import com.promanatia.CamelDemo.utility.RowContext;
 
 @Component
-public class DateRule implements TransformationRule {
+public class DepartmentRule implements TransformationRule {
 
 	@Override
 	public String getRuleCode() {
-		return "DATE_MMDDYYYY";
+		return "BUSINESSPARTNERNAME";
 	}
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		return DateUtil.toMMddyyyy(row.get(mapping.getSourceColumn()));
+		return row.getDepartment();
 	}
 
 }

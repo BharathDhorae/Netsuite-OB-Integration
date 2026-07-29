@@ -1,23 +1,23 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
+import com.promanatia.CamelDemo.utility.DateUtil;
 import com.promanatia.CamelDemo.utility.RowContext;
 
 @Component
-public class TaxableRule implements TransformationRule {
+public class MonthYearRule implements TransformationRule {
 
 	@Override
 	public String getRuleCode() {
-		return "Taxable";
+		return "DATE_MMYYYY";
 	}
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		String value = row.get(mapping.getSourceColumn());
-		return value != null && "Y".equalsIgnoreCase(value.trim()) ? "T" : "F";
+		return DateUtil.toMonthYear(row.get("DateInvoiced"));
 	}
 
 }

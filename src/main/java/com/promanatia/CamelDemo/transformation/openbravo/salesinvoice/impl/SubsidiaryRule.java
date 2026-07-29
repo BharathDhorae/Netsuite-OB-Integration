@@ -1,4 +1,4 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 

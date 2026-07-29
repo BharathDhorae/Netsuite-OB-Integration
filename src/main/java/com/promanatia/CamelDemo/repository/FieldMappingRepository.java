@@ -1,6 +1,8 @@
 package com.promanatia.CamelDemo.repository;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
+
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -44,5 +46,23 @@ public class FieldMappingRepository {
 			return mapping;
 
 		}, sourceTable);
+	}
+
+	public String getIdentificationColumn(String sourceTable) {
+
+		String sql = """
+				SELECT source_column
+				FROM int_m_field_mapping
+				WHERE source_table = ?
+				  AND identification_primary_column = 'Y'
+				  AND active = 'Y'
+				ORDER BY sequence_no
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, String.class, sourceTable);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 }

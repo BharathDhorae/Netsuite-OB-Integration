@@ -1,4 +1,4 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 
@@ -9,21 +9,21 @@ import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;
 
 @Component
-public class ProductClassRule extends BaseLookupRule implements TransformationRule {
+public class ProductSubClassRule extends BaseLookupRule implements TransformationRule {
 
-	public ProductClassRule(LookupService lookupService) {
+	public ProductSubClassRule(LookupService lookupService) {
 		super(lookupService);
 	}
 
 	@Override
 	public String getRuleCode() {
-		return "TABLEREF_PRODUCT_CLASS";
+		return "TABLEREF_PRODUCT_SUBCLASS";
 	}
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 		ProductMasterDTO dto = product(row);
-		return dto == null ? "" : dto.getClassExternalId();
+		return dto == null ? "" : dto.getSubClassExternalId();
 	}
 
 }

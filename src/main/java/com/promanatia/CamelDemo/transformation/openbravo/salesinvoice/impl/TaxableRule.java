@@ -1,4 +1,4 @@
-package com.promanatia.CamelDemo.transformation.impl;
+package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 
 import org.springframework.stereotype.Component;
 
@@ -7,16 +7,17 @@ import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;
 
 @Component
-public class DepartmentRule implements TransformationRule {
+public class TaxableRule implements TransformationRule {
 
 	@Override
 	public String getRuleCode() {
-		return "BUSINESSPARTNERNAME";
+		return "Taxable";
 	}
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		return row.getDepartment();
+		String value = row.get(mapping.getSourceColumn());
+		return value != null && "Y".equalsIgnoreCase(value.trim()) ? "T" : "F";
 	}
 
 }
