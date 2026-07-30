@@ -2,10 +2,8 @@ package com.promanatia.CamelDemo.schedulars;
 
 import com.promanatia.CamelDemo.DTO.EntityMasterDTO;
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
-import com.promanatia.CamelDemo.DTO.FlowType;
 import com.promanatia.CamelDemo.Exception.InfrastructureException;
 import com.promanatia.CamelDemo.Exception.RowValidationException;
-import com.promanatia.CamelDemo.config.SftpConfig;
 import com.promanatia.CamelDemo.repository.EntityMasterRepository;
 import com.promanatia.CamelDemo.repository.FieldMappingRepository;
 import com.promanatia.CamelDemo.service.*;
@@ -19,48 +17,53 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.EndpointConsumerBuilder;
+import org.apache.camel.builder.EndpointProducerBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.stereotype.Component;
 
-@Component
-public class SchedulerRouteImplementation extends RouteBuilder {
+/**
+ * Everything that is identical between the two directional schedulers (OB ->
+ * NetSuite and NetSuite -> OB) lives here: the exception-handling policy, the
+ * CSV parse/validate/map steps, and small helpers.
+ *
+ * Each concrete subclass supplies only the direction-specific wiring: which
+ * SFTP endpoint to read from, which direct: URI its own private pipeline runs
+ * on, which SFTP endpoints to write success/error output to, and which FlowType
+ * pair to use for the entity lookup.
+ *
+ * Because each subclass owns its own direct: URI and therefore its own
+ * route/aggregator instance, the two directions no longer need to be correlated
+ * on flowDirection — each one's completionSize/Timeout batch is naturally
+ * isolated from the other's.
+ */
+public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 
-	private static final Logger logger = LoggerFactory.getLogger(SchedulerRouteImplementation.class);
+	protected static final Logger logger = LoggerFactory.getLogger(AbstractCsvSchedulerRoute.class);
 
-	// Property/constant names for the two directions. Keeping them as constants
-	// avoids typos when the same string is compared/set in several places.
-	private static final String FLOW_DIRECTION = "flowDirection";
-	private static final String DIR_OB_TO_NETSUITE = "OB_TO_NETSUITE";
-	private static final String DIR_NETSUITE_TO_OB = "NETSUITE_TO_OB";
+	protected final CsvAggregationStrategy csvAggregationStrategy;
+	protected final CsvValidator csvValidatorService;
+	protected final CsvMappingService csvMappingService;
+	protected final ErrorCsvService errorCsvService;
+	protected final ApplicationLoggerService loggerService;
+	protected final SftpUploadService sftpUploadService;
+	protected final CsvParser csvParser;
+	protected final FieldMappingRepository fieldMappingRepository;
+	protected final EntityMasterRepository entityMasterRepository;
+	protected final LookupService lookupService;
 
-	private final SftpConfig sftpConfig;
-	private final CsvAggregationStrategy csvAggregationStrategy;
-	private final CsvValidator csvValidatorService;
-	private final CsvMappingService csvMappingService;
-	private final ErrorCsvService errorCsvService;
-	private final ApplicationLoggerService loggerService;
-	private final SftpUploadService sftpUploadService;
-	private final CsvParser csvParser;
-	private final FieldMappingRepository fieldMappingRepository;
-	private final EntityMasterRepository entityMasterRepository;
-	private final LookupService lookupService;
-
-	public SchedulerRouteImplementation(SftpConfig sftpConfig, CsvAggregationStrategy csvAggregationStrategy,
-			CsvValidator csvValidatorService, CsvMappingService csvMappingService, ErrorCsvService errorCsvService,
+	protected AbstractCsvSchedulerRoute(CsvAggregationStrategy csvAggregationStrategy, CsvValidator csvValidatorService,
+			CsvMappingService csvMappingService, ErrorCsvService errorCsvService,
 			ApplicationLoggerService loggerService, SftpUploadService sftpUploadService, CsvParser csvParser,
 			FieldMappingRepository fieldMappingRepository, EntityMasterRepository entityMasterRepository,
 			LookupService lookupService) {
 
-		this.sftpConfig = sftpConfig;
 		this.csvAggregationStrategy = csvAggregationStrategy;
 		this.csvValidatorService = csvValidatorService;
 		this.csvMappingService = csvMappingService;
@@ -72,6 +75,34 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 		this.entityMasterRepository = entityMasterRepository;
 		this.lookupService = lookupService;
 	}
+
+	// -----------------------------------------------------------------
+	// Direction-specific hooks each subclass must provide.
+	// -----------------------------------------------------------------
+
+	/** SFTP endpoint this scheduler reads incoming files from. */
+	protected abstract EndpointConsumerBuilder getSourceSftpEndpoint();
+
+	/**
+	 * Unique direct: URI for this scheduler's own private pipeline (must not
+	 * collide with the other scheduler's).
+	 */
+	protected abstract String getProcessingDirectUri();
+
+	/** SFTP endpoint the mapped/valid output CSV is written to. */
+	protected abstract EndpointProducerBuilder getSuccessOutputSftpEndpoint();
+
+	/** SFTP endpoint the error CSV is written to. */
+	protected abstract EndpointProducerBuilder getErrorOutputSftpEndpoint();
+
+	/** FlowType (as string) of the source system, used for the entity lookup. */
+	protected abstract String getSourceFlowType();
+
+	/** FlowType (as string) of the target system, used for the entity lookup. */
+	protected abstract String getTargetFlowType();
+
+	/** Short label used for routeIds and logging, e.g. "OB_TO_NETSUITE". */
+	protected abstract String getDirectionLabel();
 
 	@Override
 	public void configure() {
@@ -85,8 +116,8 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 		// ---------------------------------------------------------------
 		onException(InfrastructureException.class).maximumRedeliveries(3).redeliveryDelay(5000).backOffMultiplier(2.0)
 				.retryAttemptedLogLevel(LoggingLevel.WARN).logExhausted(true)
-				.log(LoggingLevel.ERROR,
-						"Infra failure processing file ${header.CamelFileName} after retries exhausted: ${exception.message}")
+				.log(LoggingLevel.ERROR, "[" + getDirectionLabel()
+						+ "] Infra failure processing file ${header.CamelFileName} after retries exhausted: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
 					loggerService.error("N/A", "N/A", "N/A",
@@ -100,7 +131,9 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 		// exchange stays failed so moveFailed=errorDirectory applies.
 		// ---------------------------------------------------------------
 		onException(RowValidationException.class)
-				.log(LoggingLevel.WARN, "Validation failure for file ${header.CamelFileName}: ${exception.message}")
+				.log(LoggingLevel.WARN,
+						"[" + getDirectionLabel()
+								+ "] Validation failure for file ${header.CamelFileName}: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
 					loggerService.error("N/A", "N/A", "N/A", "Validation failure processing file: " + fileName,
@@ -110,65 +143,48 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 		// ---------------------------------------------------------------
 		// 3) Anything else unexpected: log fully, do not silently swallow.
 		// ---------------------------------------------------------------
-		onException(Exception.class).log(LoggingLevel.ERROR,
-				"Unhandled error processing file ${header.CamelFileName}: ${exception.message}").handled(false);
+		onException(Exception.class)
+				.log(LoggingLevel.ERROR,
+						"[" + getDirectionLabel()
+								+ "] Unhandled error processing file ${header.CamelFileName}: ${exception.message}")
+				.handled(false);
 
 		// =================================================================
-		// FLOW A: OpenBravo -> NetSuite
-		// Reads from its own input directory, tags the exchange with the
-		// flow direction + the output URIs that belong to THIS flow, then
-		// hands off to the shared processing pipeline.
+		// Reader: pulls files from this direction's own SFTP endpoint,
+		// resolves the entity, then hands off to this scheduler's OWN
+		// private processing pipeline.
 		// =================================================================
-		from(sftpConfig.getObToNetsuiteSftpEndpoint()).routeId("sftp-ob-to-netsuite-reader")
-				.process(exchange -> exchange.setProperty(FLOW_DIRECTION, DIR_OB_TO_NETSUITE))
-				.process(this::resolveEntityAndFileId).to("direct:processCsvFile");
+		from(getSourceSftpEndpoint()).routeId(getDirectionLabel() + "-sftp-reader")
+				.process(this::resolveEntityAndFileId).to(getProcessingDirectUri());
 
 		// =================================================================
-		// FLOW B: NetSuite -> OpenBravo
-		// Same shared pipeline, different input directory and different
-		// output destinations.
+		// Pipeline: parsing/validation/mapping logic. Runs on this
+		// scheduler's own direct: URI/route, so its completionSize /
+		// completionTimeout batch is isolated from the other direction.
 		// =================================================================
-		from(sftpConfig.getNetsuiteToObSftpEndpoint()).routeId("sftp-netsuite-to-ob-reader")
-				.process(exchange -> exchange.setProperty(FLOW_DIRECTION, DIR_NETSUITE_TO_OB))
-				.process(this::resolveEntityAndFileId).to("direct:processCsvFile");
-
-		// =================================================================
-		// SHARED PIPELINE — identical parsing/validation/mapping logic for
-		// both directions. Aggregation is correlated on flowDirection +
-		// entityName so the two flows never get batched together even if
-		// they happen to share an entity name.
-		// =================================================================
-		from("direct:processCsvFile").routeId("csv-common-processor")
+		from(getProcessingDirectUri()).routeId(getDirectionLabel() + "-csv-processor")
 
 				.convertBodyTo(String.class).process(exchange -> {
 					String body = exchange.getIn().getBody(String.class);
 					int totalRows = body.split("\\r?\\n").length - 1;
-					logger.info("CSV loaded successfully. Total data rows : " + totalRows);
-				})
-				.aggregate(simple("${exchangeProperty." + FLOW_DIRECTION + "}|${exchangeProperty.entityName}"),
-						csvAggregationStrategy)
-				.completionSize(10).completionTimeout(15000).process(exchange -> lookupService.clearCache())
+					logger.info("[{}] CSV loaded successfully. Total data rows : {}", getDirectionLabel(), totalRows);
+				}).aggregate(simple("${exchangeProperty.entityName}"), csvAggregationStrategy).completionSize(10)
+				.completionTimeout(15000).process(exchange -> lookupService.clearCache())
 
 				.process(this::validateFileAndHeaders).process(this::validateRows).process(this::generateMappedCsv)
 
 				.choice().when(simple("${exchangeProperty.validRows.size} > 0"))
-				.process(sftpUploadService::uploadSuccessFile).choice()
-				.when(exchangeProperty(FLOW_DIRECTION).isEqualTo(DIR_OB_TO_NETSUITE))
-				.to(sftpConfig.getNetsuiteToObInSftpEndpoint()).otherwise()
-				.to(sftpConfig.getObToNetsuiteInSftpEndpoint()).end().end()
+				.process(sftpUploadService::uploadSuccessFile).to(getSuccessOutputSftpEndpoint()).end()
 
 				.choice().when(simple("${exchangeProperty.errorRows.size} > 0"))
-				.process(errorCsvService::generateErrorCsv).process(sftpUploadService::uploadErrorFile).choice()
-				.when(exchangeProperty(FLOW_DIRECTION).isEqualTo(DIR_OB_TO_NETSUITE))
-				.to(sftpConfig.getObToNetsuiteErrorSftpEndpoint()).otherwise()
-				.to(sftpConfig.getNetsuiteToObErrorSftpEndpoint()).end().end();
+				.process(errorCsvService::generateErrorCsv).process(sftpUploadService::uploadErrorFile)
+				.to(getErrorOutputSftpEndpoint()).end();
 	}
 
 	// ---------------------------------------------------------------------
-	// Per-branch step: resolves the entity (source/target flow order
-	// depends on direction) and sets the deterministic fileId.
+	// Resolves the entity for this direction and sets the deterministic fileId.
 	// ---------------------------------------------------------------------
-	private void resolveEntityAndFileId(org.apache.camel.Exchange exchange) {
+	private void resolveEntityAndFileId(Exchange exchange) {
 
 		String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
 		String entityName = fileName.split("_")[0];
@@ -180,15 +196,9 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 		String fileId = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
 		exchange.setProperty("fileId", fileId);
 
-		String direction = exchange.getProperty(FLOW_DIRECTION, String.class);
-		String sourceFlow = DIR_OB_TO_NETSUITE.equals(direction) ? FlowType.OPENBRAVO.toString()
-				: FlowType.NETSUITE.toString();
-		String targetFlow = DIR_OB_TO_NETSUITE.equals(direction) ? FlowType.NETSUITE.toString()
-				: FlowType.OPENBRAVO.toString();
-
 		EntityMasterDTO entity;
 		try {
-			entity = entityMasterRepository.findByEntityName(entityName, sourceFlow, targetFlow);
+			entity = entityMasterRepository.findByEntityName(entityName, getSourceFlowType(), getTargetFlowType());
 		} catch (Exception e) {
 			// DB lookup blew up (connection refused, timeout, etc.) — infra issue.
 			throw wrapAsInfrastructure("Entity lookup failed for " + entityName, e);
@@ -196,20 +206,20 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 
 		if (entity == null) {
 			// DB responded fine, there's just no such entity — that's bad data.
-			throw new RowValidationException(
-					"No entity mapping found for entity name: " + entityName + " (direction: " + direction + ")");
+			throw new RowValidationException("No entity mapping found for entity name: " + entityName + " (direction: "
+					+ getDirectionLabel() + ")");
 		}
 
 		exchange.setProperty("entity", entity);
 		exchange.setProperty("entityName", entity.getEntityName());
-		logger.info("Started processing file [{}] direction [{}]", fileName, direction);
+		logger.info("Started processing file [{}] direction [{}]", fileName, getDirectionLabel());
 	}
 
 	// ---------------------------------------------------------------------
 	// Shared step: file-level + header validation.
 	// ---------------------------------------------------------------------
 	@SuppressWarnings("unchecked")
-	private void validateFileAndHeaders(org.apache.camel.Exchange exchange) {
+	private void validateFileAndHeaders(Exchange exchange) {
 
 		String fileContent = exchange.getIn().getBody(String.class);
 		String[] rows = fileContent.split("\\r?\\n");
@@ -247,7 +257,7 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 	// Shared step: per-row validation, splitting rows into valid/error sets.
 	// ---------------------------------------------------------------------
 	@SuppressWarnings("unchecked")
-	private void validateRows(org.apache.camel.Exchange exchange) {
+	private void validateRows(Exchange exchange) {
 
 		String[] rows = exchange.getProperty("rows", String[].class);
 		String[] headers = exchange.getProperty("headers", String[].class);
@@ -318,7 +328,7 @@ public class SchedulerRouteImplementation extends RouteBuilder {
 	// Shared step: builds the mapped CSV for valid rows only.
 	// ---------------------------------------------------------------------
 	@SuppressWarnings("unchecked")
-	private void generateMappedCsv(org.apache.camel.Exchange exchange) {
+	private void generateMappedCsv(Exchange exchange) {
 
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 		String[] headers = exchange.getProperty("headers", String[].class);

@@ -112,17 +112,31 @@ public class CsvValidator {
 	public void validateHeader(String[] headers, List<FieldMappingDTO> fieldMappings) {
 
 		if (headers == null || headers.length == 0 || headers.length != fieldMappings.size()) {
+
 			throw new RuntimeException("CSV header is missing or empty");
 		}
 
 		for (int i = 0; i < headers.length; i++) {
 
-			if (headers[i] == null || headers[i].trim().isEmpty()) {
+			String csvHeader = normalizeHeader(headers[i]);
+			String mappingColumn = normalizeHeader(fieldMappings.get(i).getSourceColumn());
+
+			if (csvHeader.isEmpty()) {
 				throw new RuntimeException("Empty header found at column index: " + i);
 			}
-			if (!headers[i].equalsIgnoreCase(fieldMappings.get(i).getSourceColumn())) {
-				throw new RuntimeException("Header column mismatch with table coulum : " + i);
+
+			if (!csvHeader.equalsIgnoreCase(mappingColumn)) {
+				throw new RuntimeException("Header column mismatch at index " + i + ". CSV header = [" + csvHeader + "]"
+						+ ", Mapping column = [" + mappingColumn + "]");
 			}
 		}
+	}
+
+	private String normalizeHeader(String value) {
+		if (value == null) {
+			return "";
+		}
+
+		return value.replace("\uFEFF", "").replace('\u00A0', ' ').replaceAll("\\s+", " ").strip();
 	}
 }

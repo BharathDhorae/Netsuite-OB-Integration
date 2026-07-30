@@ -83,4 +83,21 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
+	public String findBySusidary(String subsidary) {
+
+		String sql = """
+				SELECT ad_org_name
+				FROM ob_ns_org_v3
+				WHERE subsidiary=?
+				AND isactive='Y'
+				Limit 1
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, String.class, subsidary);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
 }

@@ -19,6 +19,7 @@ public class LookupService {
 	private final Map<String, OrgSubsidaryDto> organizationCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> businessPartnerCache = new ConcurrentHashMap<>();
 	private final Map<String, ProductMasterDTO> productCache = new ConcurrentHashMap<>();
+	private final Map<String, String> orgSubsidaryCache = new ConcurrentHashMap<>();
 
 	public LookupService(OrgSubsidaryRepository orgRepository, ProductMasterRepository productRepository) {
 
@@ -53,24 +54,19 @@ public class LookupService {
 		return productCache.computeIfAbsent(searchKey.trim(), productRepository::findByProductSearchKey);
 	}
 
+	public String getOrganizationBySusidary(String subsidary) {
+
+		if (subsidary == null || subsidary.isBlank()) {
+			return null;
+		}
+
+		return orgSubsidaryCache.computeIfAbsent(subsidary.trim(), orgRepository::findBySusidary);
+	}
+
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
 		productCache.clear();
-	}
-
-	/**
-	 * Individual cache clear methods
-	 */
-	public void clearOrganizationCache() {
-		organizationCache.clear();
-	}
-
-	public void clearBusinessPartnerCache() {
-		businessPartnerCache.clear();
-	}
-
-	public void clearProductCache() {
-		productCache.clear();
+		orgSubsidaryCache.clear();
 	}
 }
