@@ -22,14 +22,14 @@ public class SftpConfig {
 	@Value("${sftp.password}")
 	private String password;
 
-	@Value("${sftp.delete}")
-	private boolean delete;
-
 	@Value("${sftp.include}")
 	private String include;
 
-	@Value("${sftp.delay}")
-	private long delay;
+	@Value("${sftp.ob.netsuite.delay}")
+	private long obToNetsuiteDelay;
+	
+	@Value("${sftp.netsuite.ob.delay}")
+	private long netsuiteToOBDelay;
 
 	@Value("${sftp.ob.netsuite.outdirectory}")
 	private String outOBtoNetsuiteDirectory;
@@ -57,13 +57,13 @@ public class SftpConfig {
 
 	public EndpointConsumerBuilder getObToNetsuiteSftpEndpoint() {
 		return sftp(host + ":" + port + outOBtoNetsuiteDirectory).username(username).password(password).include(include)
-				.delay(delay).move(archiveOBtoNetsuiteDirectory + "/${file:name}")
+				.delay(obToNetsuiteDelay).move(archiveOBtoNetsuiteDirectory + "/${file:name}")
 				.moveFailed(errorOBtoNetsuiteDirectory + "/${file:name}").readLock("changed");
 	}
 
 	public EndpointConsumerBuilder getNetsuiteToObSftpEndpoint() {
 		return sftp(host + ":" + port + outNetsuiteToOBDirectory).username(username).password(password).include(include)
-				.delay(delay).move(archiveNetsuiteToOBDirectory + "/${file:name}")
+				.delay(netsuiteToOBDelay).move(archiveNetsuiteToOBDirectory + "/${file:name}")
 				.moveFailed(errorNetsuiteToOBDirectory + "/${file:name}").readLock("changed");
 	}
 
