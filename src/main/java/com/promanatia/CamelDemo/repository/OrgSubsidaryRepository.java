@@ -83,18 +83,56 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
-	public String findBySusidary(String subsidary) {
+	public String findBySubsdiaryForProduct(String subsidary) {
 
 		String sql = """
-				SELECT ad_org_name
-				FROM ob_ns_org_v3
+				SELECT org_name
+				FROM int_m_lookup_org
 				WHERE subsidiary=?
 				AND isactive='Y'
-				Limit 1
 				""";
 
 		try {
 			return jdbcTemplate.queryForObject(sql, String.class, subsidary);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
+	public OrgSubsidaryDto findBySubsidiary(String subsidiary, String vendorSubsidiary) {
+
+		String sql = """
+				SELECT
+				    ad_org_name,
+				    subsidiary,
+				    aksharpith_subsidiary,
+				    itemLine_location,
+				    internal_vendor,
+				    financial_location,
+				    internal_customer
+				FROM ob_ns_org_v3
+				WHERE
+				    (subsidiary = ?
+				     AND aksharpith_subsidiary = ?)
+				    AND internal_vendor IS NOT NULL
+				    AND isactive='Y'
+				LIMIT 1
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+
+				OrgSubsidaryDto entity = new OrgSubsidaryDto();
+				entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
+				entity.setSubsidary(rs.getString("subsidiary"));
+				entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
+				entity.setItemLineLocation(rs.getString("itemline_location"));
+				entity.setInternalVendor(rs.getString("internal_vendor"));
+				entity.setFinancialLocation(rs.getString("financial_location"));
+				entity.setInternalCustomer(rs.getString("internal_customer"));
+
+				return entity;
+			}, subsidiary, vendorSubsidiary);
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}

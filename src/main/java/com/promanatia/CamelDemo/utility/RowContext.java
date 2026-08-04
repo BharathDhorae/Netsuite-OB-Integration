@@ -23,6 +23,8 @@ public class RowContext {
 
 	private ProductMasterDTO product;
 
+	private OrgSubsidaryDto subsidiaryDto;
+
 	public RowContext(String[] headers, String[] columns) {
 
 		values = new HashMap<>(headers.length);
@@ -117,6 +119,14 @@ public class RowContext {
 
 	public void setProduct(ProductMasterDTO product) {
 		this.product = product;
+	}
+
+	public OrgSubsidaryDto getSubsidiaryDto() {
+		return subsidiaryDto;
+	}
+
+	public void setSubsidiaryDto(OrgSubsidaryDto subsidiaryDto) {
+		this.subsidiaryDto = subsidiaryDto;
 	}
 
 }

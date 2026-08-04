@@ -11,8 +11,12 @@ import com.promanatia.CamelDemo.utility.RowContext;
 @Component
 public class VendorExternalRule extends BaseLookupRule implements TransformationRule {
 
-	public VendorExternalRule(LookupService lookupService) {
+	private final SubsidiaryRule subsidiaryRule;
+
+	public VendorExternalRule(LookupService lookupService, SubsidiaryRule subsidiaryRule) {
 		super(lookupService);
+		this.subsidiaryRule = subsidiaryRule;
+
 	}
 
 	@Override
@@ -26,9 +30,19 @@ public class VendorExternalRule extends BaseLookupRule implements Transformation
 		if (!row.isInterCompany()) {
 			return "";
 		}
+		OrgSubsidaryDto dto = subsidiary(row, mapping);
 
-		OrgSubsidaryDto dto = businessPartner(row);
 		return dto == null ? "" : dto.getInternalVendor();
+	}
+
+	protected OrgSubsidaryDto subsidiary(RowContext row, FieldMappingDTO mapping) {
+
+		if (row.getSubsidiaryDto() == null) {
+			row.setSubsidiaryDto(lookupService.getBySubsidiary(subsidiaryRule.transform(row, mapping),
+					businessPartner(row).getAksharpithSubsidary()));
+		}
+
+		return row.getSubsidiaryDto();
 	}
 
 }
