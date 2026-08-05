@@ -113,7 +113,7 @@ public class OrgSubsidaryRepository {
 				FROM ob_ns_org_v3
 				WHERE
 				    (subsidiary = ?
-				     AND aksharpith_subsidiary = ?)
+				     OR aksharpith_subsidiary = ?)
 				    AND internal_vendor IS NOT NULL
 				    AND isactive='Y'
 				LIMIT 1
