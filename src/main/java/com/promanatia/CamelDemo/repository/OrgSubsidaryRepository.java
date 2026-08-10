@@ -88,7 +88,7 @@ public class OrgSubsidaryRepository {
 		String sql = """
 				SELECT org_name
 				FROM int_m_lookup_org
-				WHERE subsidiary=?
+				WHERE subsdiary_id=?
 				AND isactive='Y'
 				""";
 
