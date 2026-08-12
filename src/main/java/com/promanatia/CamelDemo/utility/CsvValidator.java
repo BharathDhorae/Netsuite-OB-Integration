@@ -10,17 +10,19 @@ import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
 @Service
 public class CsvValidator {
 
-	public void validateFile(String[] rows) {
+	public void validateFile(List<String[]> rows) {
 
-		if (rows == null || rows.length == 0) {
+		if (rows == null || rows.isEmpty()) {
 			throw new RuntimeException("CSV file is empty");
 		}
 
-		if (rows.length <= 1) {
+		if (rows.size() <= 1) {
 			throw new RuntimeException("CSV file is empty or contains only header.");
 		}
 
-		if (rows[0] == null || rows[0].trim().isEmpty()) {
+		String[] header = rows.get(0);
+
+		if (header == null || header.length == 0) {
 			throw new RuntimeException("CSV header is missing");
 		}
 	}

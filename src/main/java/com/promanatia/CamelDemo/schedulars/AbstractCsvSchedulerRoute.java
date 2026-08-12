@@ -222,32 +222,95 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	private void validateFileAndHeaders(Exchange exchange) {
 
 		String fileContent = exchange.getIn().getBody(String.class);
-		String[] rows = fileContent.split("\\r?\\n");
+
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 
 		List<FieldMappingDTO> mappings;
+
 		String identityColumn;
+
 		try {
+
 			mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
+
 			identityColumn = fieldMappingRepository.getIdentificationColumn(entity.getSourceTableName());
 
 		} catch (Exception e) {
+
 			throw wrapAsInfrastructure("Failed to load field mappings for " + entity.getSourceTableName(), e);
 		}
 
 		try {
-			csvValidatorService.validateFile(rows);
-			String[] headers = csvParser.parseCsvLine(rows[0]);
+
+			/*
+			 * Parse the COMPLETE CSV.
+			 *
+			 * Never split CSV by newline.
+			 */
+			List<String[]> parsedRows = csvParser.parseCsv(fileContent);
+			csvValidatorService.validateFile(parsedRows);
+
+			if (parsedRows == null || parsedRows.isEmpty()) {
+
+				throw new RowValidationException("CSV file is empty");
+			}
+
+			/*
+			 * CSV header.
+			 */
+			String[] headers = parsedRows.get(0);
+
+			/*
+			 * Validate file.
+			 */
+			if (parsedRows.size() <= 1) {
+
+				throw new RowValidationException("CSV file is empty or contains only header.");
+			}
+
+			/*
+			 * Validate header.
+			 */
 			csvValidatorService.validateHeader(headers, mappings);
-			logger.info(entity.getEntityName(), "Header validation successful.");
+
+			/*
+			 * Convert data records back to COMPLETE CSV records.
+			 *
+			 * This preserves multiline quoted fields.
+			 */
+			List<String> rows = new ArrayList<>();
+
+			for (int i = 1; i < parsedRows.size(); i++) {
+
+				String[] row = parsedRows.get(i);
+
+				if (row == null || row.length == 0) {
+					continue;
+				}
+
+				rows.add(csvParser.toCsvRecord(row));
+			}
+
+			logger.info("[{}] Header validation successful. Total data rows: {}", entity.getEntityName(), rows.size());
+
 			exchange.setProperty("mappings", mappings);
+
 			exchange.setProperty("identityColumn", identityColumn);
+
 			exchange.setProperty("headers", headers);
+
 			exchange.setProperty("rows", rows);
+
 		} catch (InfrastructureException ie) {
+
 			throw ie;
+
+		} catch (RowValidationException e) {
+
+			throw e;
+
 		} catch (Exception e) {
-			// Malformed file / bad headers — data problem, not infra.
+
 			throw new RowValidationException(
 					"File/header validation failed for file " + entity.getEntityName() + ": " + e.getMessage(), e);
 		}
@@ -259,68 +322,107 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	@SuppressWarnings("unchecked")
 	private void validateRows(Exchange exchange) {
 
-		String[] rows = exchange.getProperty("rows", String[].class);
+		List<String> rows = exchange.getProperty("rows", List.class);
+
 		String[] headers = exchange.getProperty("headers", String[].class);
+
 		List<String> validRows = new ArrayList<>();
+
 		List<String> errorRows = new ArrayList<>();
+
 		Set<String> failedOrders = new HashSet<>();
 
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+
 		List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
+
 		String identityColumn = exchange.getProperty("identityColumn", String.class);
 
-		for (int i = 1; i < rows.length; i++) {
-			String row = rows[i];
-			if (row == null || row.trim().isEmpty()) {
+		for (int i = 0; i < rows.size(); i++) {
+
+			String row = rows.get(i);
+
+			if (row == null || row.isBlank()) {
 				continue;
 			}
 
+			/*
+			 * Parse the COMPLETE CSV record.
+			 */
 			String[] cols = csvParser.parseCsvLine(row);
 
 			String documentNo = getColumnValue(headers, cols, identityColumn);
+
 			String productId = getColumnValue(headers, cols, identityColumn);
 
 			logger.info(productId, entity.getEntityName(), documentNo, "Started processing CSV file.");
 
 			try {
-				List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i, row, mappings);
+
+				/*
+				 * rowNum is +1 because original CSV has header at row 1.
+				 */
+				List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i + 1, row, mappings);
 
 				if (!validationErrors.isEmpty()) {
+
 					failedOrders.add(documentNo);
+
 					String errorMessage = String.join(" | ", validationErrors);
-					logger.error("Validation failed for Row {} : {}", i + 1, errorMessage);
+
+					logger.error("Validation failed for Row {} : {}", i + 2, errorMessage);
+
 					loggerService.error(productId, entity.getEntityName(), documentNo, "CSV Validation Failed",
 							errorMessage);
+
 				} else {
-					logger.info(productId, entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 1);
+
+					logger.info(productId, entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
 				}
+
 			} catch (Exception e) {
+
 				if (isInfrastructureFailure(e)) {
+
 					logger.error("Infrastructure failure during row validation, aborting file: {}", e.getMessage());
-					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 1)
+
+					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 2)
 							+ " of file for entity " + entity.getEntityName(), e);
 				}
+
 				throw e;
 			}
 		}
 
-		for (int i = 1; i < rows.length; i++) {
-			String row = rows[i];
-			if (row == null || row.trim().isEmpty()) {
+		/*
+		 * Build valid/error rows.
+		 *
+		 * IMPORTANT: We keep the COMPLETE CSV record.
+		 */
+		for (String row : rows) {
+
+			if (row == null || row.isBlank()) {
 				continue;
 			}
 
 			String[] cols = csvParser.parseCsvLine(row);
+
 			String documentNo = getColumnValue(headers, cols, identityColumn);
+
 			if (failedOrders.contains(documentNo)) {
+
 				errorRows.add(row);
+
 			} else {
+
 				validRows.add(row);
 			}
 		}
 
 		exchange.setProperty("validRows", validRows);
+
 		exchange.setProperty("errorRows", errorRows);
+
 		exchange.setProperty("failedOrders", failedOrders);
 	}
 
