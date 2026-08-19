@@ -71,4 +71,14 @@ public final class DateUtil {
 		return date.format(DateTimeFormatter.ofPattern("MMM-yy", Locale.ENGLISH));
 	}
 
+	public static String toDayMonth(String value) {
+		LocalDate date = parse(value);
+
+		if (date == null) {
+			return "";
+		}
+
+		return date.format(DateTimeFormatter.ofPattern("dd-MMM", Locale.ENGLISH));
+	}
+
 }
