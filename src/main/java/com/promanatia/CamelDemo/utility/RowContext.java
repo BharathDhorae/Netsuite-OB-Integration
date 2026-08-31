@@ -9,6 +9,7 @@ import com.promanatia.CamelDemo.DTO.ProductMasterDTO;
 public class RowContext {
 
 	private static final String BP_FIRST_NAME = "BusinessPartnerFirstName";
+	private static final String ORG_NAME = "Organization";
 
 	private final Map<String, String> values;
 
@@ -65,6 +66,7 @@ public class RowContext {
 		}
 
 		String bp = get(BP_FIRST_NAME).toLowerCase();
+		String orgName = get(ORG_NAME).toLowerCase();
 
 		if (bp.contains("baps shayona")) {
 
@@ -78,7 +80,11 @@ public class RowContext {
 
 			department = "3115";
 
-		} else {
+		} else if ( orgName.contains("aksharpith online") || bp.contains("akshar.org online") ) {
+
+			department = "3330";
+
+		}else {
 
 			department = "3230";
 		}
