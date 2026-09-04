@@ -32,20 +32,33 @@ public class RowContext {
 
 		for (int i = 0; i < headers.length; i++) {
 
-			values.put(headers[i].toLowerCase(), i < columns.length && columns[i] != null ? columns[i].trim() : "");
+			String header = normalize(headers[i]);
+
+			String value = i < columns.length && columns[i] != null ? columns[i].trim() : "";
+
+			values.put(header, value);
 		}
+	}
+
+	private String normalize(String value) {
+
+		if (value == null) {
+			return "";
+		}
+
+		return value.trim().replaceAll("\\s+", " ").toLowerCase();
 	}
 
 	/**
 	 * Get value by column name.
 	 */
-	public String get(String columnName) {
+	public String get(String key) {
 
-		if (columnName == null) {
+		if (key == null) {
 			return "";
 		}
 
-		return values.getOrDefault(columnName.toLowerCase(), "");
+		return values.getOrDefault(normalize(key), "");
 	}
 
 	/**
@@ -80,11 +93,11 @@ public class RowContext {
 
 			department = "3115";
 
-		} else if ( orgName.contains("aksharpith online") || bp.contains("akshar.org online") ) {
+		} else if (orgName.contains("aksharpith online") || bp.contains("akshar.org online")) {
 
 			department = "3330";
 
-		}else {
+		} else {
 
 			department = "3230";
 		}

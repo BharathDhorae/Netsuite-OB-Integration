@@ -21,7 +21,6 @@ public class LookupService {
 	private final Map<String, ProductMasterDTO> productCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgSubsidaryCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> subsidiaryCache = new ConcurrentHashMap<>();
-	private final Map<String, String> orgProductTypeCache = new ConcurrentHashMap<>();
 
 	public LookupService(OrgSubsidaryRepository orgRepository, ProductMasterRepository productRepository) {
 
@@ -77,21 +76,11 @@ public class LookupService {
 		return orgSubsidaryCache.computeIfAbsent(subsidary.trim(), orgRepository::findBySubsdiaryForProduct);
 	}
 
-	public String getProductTypeByInternalId(String internalId) {
-
-		if (internalId == null || internalId.isBlank()) {
-			return null;
-		}
-
-		return orgProductTypeCache.computeIfAbsent(internalId.trim(), orgRepository::findProductTypeByInternalId);
-	}
-
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
 		productCache.clear();
 		subsidiaryCache.clear();
 		orgSubsidaryCache.clear();
-		orgProductTypeCache.clear();
 	}
 }

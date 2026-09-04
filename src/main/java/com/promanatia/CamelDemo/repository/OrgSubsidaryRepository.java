@@ -137,21 +137,4 @@ public class OrgSubsidaryRepository {
 			return null;
 		}
 	}
-	
-	public String findProductTypeByInternalId(String internalId) {
-
-		String sql = """
-				SELECT product_type_list
-				FROM int_m_product_type
-				WHERE internal_id=?
-				AND isactive='Y'
-				""";
-
-		try {
-			return jdbcTemplate.queryForObject(sql, String.class, internalId);
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
-
 }
