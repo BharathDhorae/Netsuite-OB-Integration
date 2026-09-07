@@ -83,22 +83,6 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
-	public String findBySubsdiaryForProduct(String subsidary) {
-
-		String sql = """
-				SELECT org_name
-				FROM int_m_lookup_org
-				WHERE subsdiary_id=?
-				AND isactive='Y'
-				""";
-
-		try {
-			return jdbcTemplate.queryForObject(sql, String.class, subsidary);
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
-
 	public OrgSubsidaryDto findBySubsidiary(String subsidiary, String vendorSubsidiary) {
 
 		String sql = """
