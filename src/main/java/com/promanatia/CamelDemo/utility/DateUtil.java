@@ -68,7 +68,7 @@ public final class DateUtil {
 			return "";
 		}
 
-		return date.format(DateTimeFormatter.ofPattern("MMM-yy", Locale.ENGLISH));
+		return date.format(DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH));
 	}
 
 	public static String toDayMonth(String value) {
