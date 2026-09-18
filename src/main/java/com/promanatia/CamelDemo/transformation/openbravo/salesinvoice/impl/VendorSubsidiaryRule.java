@@ -28,7 +28,7 @@ public class VendorSubsidiaryRule extends BaseLookupRule implements Transformati
 		}
 
 		OrgSubsidaryDto dto = businessPartner(row);
-		return dto == null ? "" : dto.getAksharpithSubsidary();
+		return dto == null ? "" : dto.getSubsidary();
 	}
 
 }

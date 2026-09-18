@@ -121,4 +121,36 @@ public class OrgSubsidaryRepository {
 			return null;
 		}
 	}
+	
+	public String getOrgNameByLocationColumn(String itemLineLocation) {
+
+		String sql = """
+				SELECT ad_org_nme
+				FROM ob_ns_org_v3
+				WHERE itemline_location = ?
+				AND isactive='Y'
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, String.class, itemLineLocation);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+	
+	public String findExternalInventoryLocation(String itemLineLocation) {
+
+		String sql = """
+				SELECT external_id_inventory_location
+				FROM ob_ns_org_v3
+				WHERE ad_org_name = ?
+				AND isactive='Y'
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, String.class, itemLineLocation);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
 }

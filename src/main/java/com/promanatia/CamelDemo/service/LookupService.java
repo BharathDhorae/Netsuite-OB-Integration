@@ -20,6 +20,8 @@ public class LookupService {
 	private final Map<String, OrgSubsidaryDto> businessPartnerCache = new ConcurrentHashMap<>();
 	private final Map<String, ProductMasterDTO> productCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> subsidiaryCache = new ConcurrentHashMap<>();
+	private final Map<String, String> orgNameShipmentCache = new ConcurrentHashMap<>();
+	private final Map<String, String> orgExternalInventoryCache = new ConcurrentHashMap<>();
 
 	public LookupService(OrgSubsidaryRepository orgRepository, ProductMasterRepository productRepository) {
 
@@ -66,10 +68,31 @@ public class LookupService {
 		return productCache.computeIfAbsent(searchKey.trim(), productRepository::findByProductSearchKey);
 	}
 
+	public String getOrgName(String itemLineLocation) {
+
+		if (itemLineLocation == null || itemLineLocation.isBlank()) {
+			return null;
+		}
+
+		return orgNameShipmentCache.computeIfAbsent(itemLineLocation.trim(), orgRepository::getOrgNameByLocationColumn);
+	}
+
+	public String getExternalInventoryLocation(String externalInventoryLocation) {
+
+		if (externalInventoryLocation == null || externalInventoryLocation.isBlank()) {
+			return null;
+		}
+
+		return orgExternalInventoryCache.computeIfAbsent(externalInventoryLocation.trim(),
+				orgRepository::findExternalInventoryLocation);
+	}
+
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
 		productCache.clear();
 		subsidiaryCache.clear();
+		orgNameShipmentCache.clear();
+		orgExternalInventoryCache.clear();
 	}
 }
