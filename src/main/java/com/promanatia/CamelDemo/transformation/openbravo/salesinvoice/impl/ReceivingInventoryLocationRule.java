@@ -25,14 +25,18 @@ public class ReceivingInventoryLocationRule implements TransformationRule {
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 
-		String externalInventoryLocation = row.getExternalInventoryLocation();
-		if (externalInventoryLocation == null) {
-			externalInventoryLocation = lookupService.getExternalInventoryLocation(row.get("BusinessPartnerExtID"));
-			row.setExternalInventoryLocation(externalInventoryLocation);
-		}
+		String businessPartnerExtId = row.get("BusinessPartnerExtID");
+
 		if (!row.isInterCompany()) {
 			return "";
 		}
+
+		if (businessPartnerExtId == null || businessPartnerExtId.isBlank()) {
+			return "";
+		}
+
+		String externalInventoryLocation = lookupService.getExternalInventoryLocation(businessPartnerExtId);
+
 		return externalInventoryLocation == null ? "" : externalInventoryLocation;
 	}
 }

@@ -24,11 +24,14 @@ public class SellingInventoryLocationRule implements TransformationRule {
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 
-		String externalInventoryLocation = row.getExternalInventoryLocation();
-		if (externalInventoryLocation == null) {
-			externalInventoryLocation = lookupService.getExternalInventoryLocation(row.get("organization"));
-			row.setExternalInventoryLocation(externalInventoryLocation);
+		String organization = row.get("organization");
+
+		if (organization == null || organization.isBlank()) {
+			return "";
 		}
+
+		String externalInventoryLocation = lookupService.getExternalInventoryLocation(organization);
+
 		return externalInventoryLocation == null ? "" : externalInventoryLocation;
 	}
 

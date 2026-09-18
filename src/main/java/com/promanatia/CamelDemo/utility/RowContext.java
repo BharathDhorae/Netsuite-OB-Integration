@@ -28,8 +28,6 @@ public class RowContext {
 
 	private String orgNameLocation;
 
-	private String externalInventoryLocation;
-
 	public RowContext(String[] headers, String[] columns) {
 
 		values = new HashMap<>(headers.length);
@@ -159,13 +157,4 @@ public class RowContext {
 	public void setOrgNameLocation(String orgNameLocation) {
 		this.orgNameLocation = orgNameLocation;
 	}
-
-	public String getExternalInventoryLocation() {
-		return externalInventoryLocation;
-	}
-
-	public void setExternalInventoryLocation(String externalInventoryLocation) {
-		this.externalInventoryLocation = externalInventoryLocation;
-	}
-
 }
