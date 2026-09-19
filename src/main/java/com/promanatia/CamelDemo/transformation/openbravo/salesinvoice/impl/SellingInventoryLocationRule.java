@@ -30,7 +30,7 @@ public class SellingInventoryLocationRule implements TransformationRule {
 			dto = lookupService.getOrganization(row.get("organization"));
 			row.setOrganization(dto);
 		}
-		return dto.getExternalInventoryLocation() == null ? "" : dto.getExternalInventoryLocation();
+		return dto == null ? "" : dto.getExternalInventoryLocation();
 	}
 
 }
