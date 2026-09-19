@@ -3,6 +3,7 @@ package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 import org.springframework.stereotype.Component;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
+import com.promanatia.CamelDemo.DTO.OrgSubsidaryDto;
 import com.promanatia.CamelDemo.service.LookupService;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;
@@ -24,15 +25,12 @@ public class SellingInventoryLocationRule implements TransformationRule {
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 
-		String organization = row.get("organization");
-
-		if (organization == null || organization.isBlank()) {
-			return "";
+		OrgSubsidaryDto dto = row.getOrganization();
+		if (dto == null) {
+			dto = lookupService.getOrganization(row.get("organization"));
+			row.setOrganization(dto);
 		}
-
-		String externalInventoryLocation = lookupService.getExternalInventoryLocation(organization);
-
-		return externalInventoryLocation == null ? "" : externalInventoryLocation;
+		return dto.getExternalInventoryLocation() == null ? "" : dto.getExternalInventoryLocation();
 	}
 
 }

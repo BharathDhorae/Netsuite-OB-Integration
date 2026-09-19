@@ -24,10 +24,12 @@ public class OrgSubsidaryRepository {
 				       itemline_location,
 				       internal_vendor,
 				       financial_location,
-				       internal_customer
+				       internal_customer,
+				       external_id_inventory_location
 				FROM ob_ns_org_v3
 				WHERE ad_org_name=?
 				AND isactive='Y'
+				Limit 1
 				""";
 		try {
 			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
@@ -40,7 +42,7 @@ public class OrgSubsidaryRepository {
 				entity.setInternalVendor(rs.getString("internal_vendor"));
 				entity.setFinancialLocation(rs.getString("financial_location"));
 				entity.setInternalCustomer(rs.getString("internal_customer"));
-
+				entity.setExternalInventoryLocation(rs.getString("external_id_inventory_location"));
 				return entity;
 			}, orgName);
 		} catch (EmptyResultDataAccessException e) {
@@ -145,6 +147,7 @@ public class OrgSubsidaryRepository {
 				FROM ob_ns_org_v3
 				WHERE ad_org_name = ?
 				AND isactive='Y'
+				Limit 1
 				""";
 
 		try {

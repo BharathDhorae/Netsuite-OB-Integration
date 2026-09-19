@@ -3,7 +3,6 @@ package com.promanatia.CamelDemo.transformation.openbravo.salesinvoice.impl;
 import org.springframework.stereotype.Component;
 
 import com.promanatia.CamelDemo.DTO.FieldMappingDTO;
-import com.promanatia.CamelDemo.DTO.OrgSubsidaryDto;
 import com.promanatia.CamelDemo.service.LookupService;
 import com.promanatia.CamelDemo.transformation.TransformationRule;
 import com.promanatia.CamelDemo.utility.RowContext;

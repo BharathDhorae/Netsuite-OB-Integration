@@ -11,4 +11,5 @@ public class OrgSubsidaryDto {
 	private String internalVendor;
 	private String financialLocation;
 	private String internalCustomer;
+	private String externalInventoryLocation;
 }
