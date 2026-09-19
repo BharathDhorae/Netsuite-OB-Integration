@@ -123,7 +123,7 @@ public class OrgSubsidaryRepository {
 			return null;
 		}
 	}
-	
+
 	public String getOrgNameByLocationColumn(String itemLineLocation) {
 
 		String sql = """
@@ -139,15 +139,15 @@ public class OrgSubsidaryRepository {
 			return null;
 		}
 	}
-	
+
 	public String findExternalInventoryLocation(String itemLineLocation) {
 
 		String sql = """
-				SELECT external_id_inventory_location
+				 SELECT external_id_inventory_location
 				FROM ob_ns_org_v3
-				WHERE ad_org_name = ?
-				AND isactive='Y'
-				Limit 1
+				WHERE LOWER(ad_org_name) LIKE LOWER('%' || ?)
+				  AND isactive = 'Y'
+				LIMIT 1
 				""";
 
 		try {
