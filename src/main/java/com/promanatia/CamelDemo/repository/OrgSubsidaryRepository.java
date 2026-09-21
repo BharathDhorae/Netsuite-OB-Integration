@@ -1,5 +1,8 @@
 package com.promanatia.CamelDemo.repository;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,8 +19,12 @@ public class OrgSubsidaryRepository {
 	}
 
 	public OrgSubsidaryDto findByOrganizationName(String orgName) {
+		return findByOrganizationName(orgName, null);
+	}
 
-		String sql = """
+	public OrgSubsidaryDto findByOrganizationName(String orgName, String itemLineLocation) {
+
+		StringBuilder sql = new StringBuilder("""
 				SELECT ad_org_name,
 				       subsidiary,
 				       aksharpith_subsidiary,
@@ -27,14 +34,25 @@ public class OrgSubsidaryRepository {
 				       internal_customer,
 				       external_id_inventory_location
 				FROM ob_ns_org_v3
-				WHERE ad_org_name=?
-				AND isactive='Y'
-				Limit 1
-				""";
+				WHERE ad_org_name = ?
+				  AND isactive = 'Y'
+				""");
+
+		List<Object> params = new ArrayList<>();
+		params.add(orgName);
+
+		if (itemLineLocation != null && !itemLineLocation.isBlank()) {
+			sql.append(" AND itemline_location = ?");
+			params.add(itemLineLocation);
+		}
+
+		sql.append(" LIMIT 1");
+
 		try {
-			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+			return jdbcTemplate.queryForObject(sql.toString(), (rs, rowNum) -> {
 
 				OrgSubsidaryDto entity = new OrgSubsidaryDto();
+
 				entity.setOrgSubsidaryName(rs.getString("ad_org_name"));
 				entity.setSubsidary(rs.getString("subsidiary"));
 				entity.setAksharpithSubsidary(rs.getString("aksharpith_subsidiary"));
@@ -43,8 +61,10 @@ public class OrgSubsidaryRepository {
 				entity.setFinancialLocation(rs.getString("financial_location"));
 				entity.setInternalCustomer(rs.getString("internal_customer"));
 				entity.setExternalInventoryLocation(rs.getString("external_id_inventory_location"));
+
 				return entity;
-			}, orgName);
+			}, params.toArray());
+
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
