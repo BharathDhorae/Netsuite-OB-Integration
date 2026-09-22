@@ -22,11 +22,6 @@ public class VendorFinancialLocationRule extends BaseLookupRule implements Trans
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-
-		if (!row.isInterCompany()) {
-			return "";
-		}
-
 		OrgSubsidaryDto dto = businessPartner(row);
 		return dto == null ? "" : dto.getFinancialLocation();
 	}
