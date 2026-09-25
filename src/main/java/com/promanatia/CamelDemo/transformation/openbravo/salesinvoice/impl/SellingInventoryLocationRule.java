@@ -38,43 +38,40 @@ public class SellingInventoryLocationRule implements TransformationRule {
 		String productCategory = row.get("ProductcatParent");
 		String businessPartner = row.get("BusinessPartnerExtID");
 
-		/*
-		 * Special handling for Aksharpith Online / Aksharpith - National
-		 */
-		if ("Aksharpith Online".equalsIgnoreCase(organization)
-				|| "Aksharpith - National".equalsIgnoreCase(organization)) {
+		// Aksharpith Online - Herbal
+		if ("Aksharpith Online".equalsIgnoreCase(organization) && "10000".equalsIgnoreCase(productCategory)) {
+			return getInventoryLocation("Aksharpith Online", "Aksharpith - NAHQ - Herbal - BAPS - WH");
+		}
 
-			// Aksharpith Online - Herbal
-			if ("Aksharpith Online".equalsIgnoreCase(organization) && "10000".equalsIgnoreCase(productCategory)) {
+		// Aksharpith Online - Gifts
+		if ("Aksharpith Online".equalsIgnoreCase(organization)) {
+			return getInventoryLocation("Aksharpith Online", "Aksharpith - NAHQ - Gifts - BAPS - WH");
+		}
 
-				return getInventoryLocation("Aksharpith Online", "Aksharpith - NAHQ - Herbal - BAPS - WH");
-			}
+		// Aksharpith National - Akshar.org Online
+		if ("Akshar.org Online".equalsIgnoreCase(businessPartner)) {
+			return getInventoryLocation(null, "Aksharpith - NAHQ - Herbal - Akshar - WH");
+		}
 
-			// Aksharpith Online - Gifts
-			if ("Aksharpith Online".equalsIgnoreCase(organization)) {
+		// Aksharpith National - Amazon Herbal
+		if ("10000".equalsIgnoreCase(productCategory) && isAmazonBusinessPartner(businessPartner)) {
+			return getInventoryLocation(null, "Aksharpith - NAHQ - Herbal - AMZN - WH");
+		}
 
-				return getInventoryLocation("Aksharpith Online", "Aksharpith - NAHQ - Gifts - BAPS - WH");
-			}
+		// Aksharpith National - Amazon Gifts
+		if (isAmazonBusinessPartner(businessPartner)) {
+			return getInventoryLocation(null, "Aksharpith - NAHQ - Gifts - AMZN - WH");
+		}
 
-			// Aksharpith National - Akshar.org Online
-			if ("Aksharpith - National".equalsIgnoreCase(organization)
-					&& "Akshar.org Online".equalsIgnoreCase(businessPartner)) {
+		// BAPS Shayona Robbinsville Cafe-Express
+		if (businessPartner != null && businessPartner.toLowerCase().contains("express")
+				&& "BAPS Shayona - Robbinsville Cafe".equalsIgnoreCase(organization)) {
+			return getInventoryLocation("BAPS Shayona - Robbinsville Cafe", "Akshardham Cafe Express - SHA Inv");
+		}
 
-				return getInventoryLocation("Aksharpith - National", "Aksharpith - NAHQ - Herbal - Akshar - WH");
-			}
-
-			// Aksharpith National - Amazon Herbal
-			if ("Aksharpith - National".equalsIgnoreCase(organization) && "10000".equalsIgnoreCase(productCategory)
-					&& isAmazonBusinessPartner(businessPartner)) {
-
-				return getInventoryLocation("Aksharpith - National", "Aksharpith - NAHQ - Herbal - AMZN - WH");
-			}
-
-			// Aksharpith National - Amazon Gifts
-			if ("Aksharpith - National".equalsIgnoreCase(organization) && isAmazonBusinessPartner(businessPartner)) {
-
-				return getInventoryLocation("Aksharpith - National", "Aksharpith - NAHQ - Gifts - AMZN - WH");
-			}
+		// BAPS Shayona Robbinsville Cafe-Cafe
+		if ("BAPS Shayona - Robbinsville Cafe".equalsIgnoreCase(organization)) {
+			return getInventoryLocation("BAPS Shayona - Robbinsville Cafe", "Akshardham Café - SHA Inv");
 		}
 
 		/*

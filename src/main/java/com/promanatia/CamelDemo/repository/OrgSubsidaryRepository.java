@@ -34,15 +34,18 @@ public class OrgSubsidaryRepository {
 				       internal_customer,
 				       external_id_inventory_location
 				FROM ob_ns_org_v3
-				WHERE ad_org_name = ?
-				  AND isactive = 'Y'
+				WHERE isactive = 'Y'
 				""");
 
 		List<Object> params = new ArrayList<>();
-		params.add(orgName);
+
+		if (orgName != null && !orgName.isBlank()) {
+			sql.append(" AND LOWER(ad_org_name) = LOWER(?)");
+			params.add(orgName);
+		}
 
 		if (itemLineLocation != null && !itemLineLocation.isBlank()) {
-			sql.append(" AND itemline_location = ?");
+			sql.append(" LOWER(itemline_location) = LOWER(?)");
 			params.add(itemLineLocation);
 		}
 
