@@ -45,7 +45,7 @@ public class OrgSubsidaryRepository {
 		}
 
 		if (itemLineLocation != null && !itemLineLocation.isBlank()) {
-			sql.append(" LOWER(itemline_location) = LOWER(?)");
+			sql.append(" AND LOWER(itemline_location) = LOWER(?)");
 			params.add(itemLineLocation);
 		}
 
