@@ -7,7 +7,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 
 @Repository
 public class OrgSubsidaryRepository {

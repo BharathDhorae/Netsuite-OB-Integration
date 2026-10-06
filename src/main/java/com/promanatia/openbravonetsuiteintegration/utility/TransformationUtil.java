@@ -2,7 +2,7 @@ package com.promanatia.openbravonetsuiteintegration.utility;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationFactory;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
 

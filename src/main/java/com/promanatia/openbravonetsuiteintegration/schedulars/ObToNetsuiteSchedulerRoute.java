@@ -1,7 +1,7 @@
 package com.promanatia.openbravonetsuiteintegration.schedulars;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FlowType;
 import com.promanatia.openbravonetsuiteintegration.config.SftpConfig;
+import com.promanatia.openbravonetsuiteintegration.dto.FlowType;
 import com.promanatia.openbravonetsuiteintegration.repository.EntityMasterRepository;
 import com.promanatia.openbravonetsuiteintegration.repository.FieldMappingRepository;
 import com.promanatia.openbravonetsuiteintegration.service.*;

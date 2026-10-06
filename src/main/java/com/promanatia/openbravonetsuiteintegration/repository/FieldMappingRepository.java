@@ -4,7 +4,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 
 import java.util.List;
 

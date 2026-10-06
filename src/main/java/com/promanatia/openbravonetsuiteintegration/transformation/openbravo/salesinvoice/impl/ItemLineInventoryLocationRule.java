@@ -4,15 +4,15 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
-import com.promanatia.openbravonetsuiteintegration.DTO.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 import com.promanatia.openbravonetsuiteintegration.repository.OrgSubsidaryRepository;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class SellingInventoryLocationRule implements TransformationRule {
+public class ItemLineInventoryLocationRule implements TransformationRule {
 
 	private static final List<String> AMAZON_BUSINESS_PARTNERS = List.of("Amazon Advantage", "Amazon Seller Central",
 			"Amazon Kindle Direct Publishing");
@@ -20,7 +20,7 @@ public class SellingInventoryLocationRule implements TransformationRule {
 	private final LookupService lookupService;
 	private final OrgSubsidaryRepository orgRepository;
 
-	public SellingInventoryLocationRule(LookupService lookupService, OrgSubsidaryRepository orgRepository) {
+	public ItemLineInventoryLocationRule(LookupService lookupService, OrgSubsidaryRepository orgRepository) {
 
 		this.lookupService = lookupService;
 		this.orgRepository = orgRepository;
@@ -28,7 +28,7 @@ public class SellingInventoryLocationRule implements TransformationRule {
 
 	@Override
 	public String getRuleCode() {
-		return "SELLING_INVENTORY_LOCATION";
+		return "ITEM_LINE_INVENTORY_LOCATION";
 	}
 
 	@Override

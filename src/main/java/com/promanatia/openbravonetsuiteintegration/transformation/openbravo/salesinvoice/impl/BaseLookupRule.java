@@ -1,7 +1,6 @@
 package com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.OrgSubsidaryDto;
-import com.promanatia.openbravonetsuiteintegration.DTO.ProductMasterDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
@@ -29,15 +28,6 @@ public abstract class BaseLookupRule {
 		}
 
 		return row.getBusinessPartner();
-	}
-
-	protected ProductMasterDTO product(RowContext row) {
-
-		if (row.getProduct() == null) {
-			row.setProduct(lookupService.getProduct(row.get("ProductSearchKey")));
-		}
-
-		return row.getProduct();
 	}
 
 }

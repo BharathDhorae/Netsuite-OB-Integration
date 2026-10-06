@@ -1,6 +1,6 @@
 package com.promanatia.openbravonetsuiteintegration.service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.EntityMasterDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.EntityMasterDTO;
 import com.promanatia.openbravonetsuiteintegration.utility.FileNameGenerator;
 
 import org.apache.camel.Exchange;

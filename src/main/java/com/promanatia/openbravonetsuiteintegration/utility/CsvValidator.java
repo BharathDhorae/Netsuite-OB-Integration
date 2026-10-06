@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 
 @Service
 public class CsvValidator {

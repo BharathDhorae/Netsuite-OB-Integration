@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.ApplicationLogDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.ApplicationLogDTO;
 
 @Repository
 public class ApplicationLogRepository {

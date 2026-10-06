@@ -3,8 +3,7 @@ package com.promanatia.openbravonetsuiteintegration.utility;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.OrgSubsidaryDto;
-import com.promanatia.openbravonetsuiteintegration.DTO.ProductMasterDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 
 public class RowContext {
 
@@ -21,8 +20,6 @@ public class RowContext {
 	private OrgSubsidaryDto organization;
 
 	private OrgSubsidaryDto businessPartner;
-
-	private ProductMasterDTO product;
 
 	private OrgSubsidaryDto subsidiaryDto;
 
@@ -132,14 +129,6 @@ public class RowContext {
 
 	public void setBusinessPartner(OrgSubsidaryDto businessPartner) {
 		this.businessPartner = businessPartner;
-	}
-
-	public ProductMasterDTO getProduct() {
-		return product;
-	}
-
-	public void setProduct(ProductMasterDTO product) {
-		this.product = product;
 	}
 
 	public OrgSubsidaryDto getSubsidiaryDto() {

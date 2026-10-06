@@ -1,6 +1,6 @@
 package com.promanatia.openbravonetsuiteintegration.transformation;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 public interface TransformationRule {

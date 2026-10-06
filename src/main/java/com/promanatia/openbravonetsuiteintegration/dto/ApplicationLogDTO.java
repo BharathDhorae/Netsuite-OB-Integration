@@ -1,4 +1,4 @@
-package com.promanatia.openbravonetsuiteintegration.DTO;
+package com.promanatia.openbravonetsuiteintegration.dto;
 
 import java.sql.Timestamp;
 

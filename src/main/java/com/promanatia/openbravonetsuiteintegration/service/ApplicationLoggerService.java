@@ -1,6 +1,6 @@
 package com.promanatia.openbravonetsuiteintegration.service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.ApplicationLogDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.ApplicationLogDTO;
 import com.promanatia.openbravonetsuiteintegration.repository.ApplicationLogRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;

@@ -7,7 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.ApplicationLogDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.ApplicationLogDTO;
 import com.promanatia.openbravonetsuiteintegration.service.DashboardService;
 
 @Controller

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.ApplicationLogDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.ApplicationLogDTO;
 import com.promanatia.openbravonetsuiteintegration.repository.ApplicationLogRepository;
 
 @Service

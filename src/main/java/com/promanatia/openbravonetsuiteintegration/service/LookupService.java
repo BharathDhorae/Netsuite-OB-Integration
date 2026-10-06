@@ -5,28 +5,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.OrgSubsidaryDto;
-import com.promanatia.openbravonetsuiteintegration.DTO.ProductMasterDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 import com.promanatia.openbravonetsuiteintegration.repository.OrgSubsidaryRepository;
-import com.promanatia.openbravonetsuiteintegration.repository.ProductMasterRepository;
 
 @Service
 public class LookupService {
 
 	private final OrgSubsidaryRepository orgRepository;
-	private final ProductMasterRepository productRepository;
 
 	private final Map<String, OrgSubsidaryDto> organizationCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> businessPartnerCache = new ConcurrentHashMap<>();
-	private final Map<String, ProductMasterDTO> productCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> subsidiaryCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgNameShipmentCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgExternalInventoryCache = new ConcurrentHashMap<>();
 
-	public LookupService(OrgSubsidaryRepository orgRepository, ProductMasterRepository productRepository) {
+	public LookupService(OrgSubsidaryRepository orgRepository) {
 
 		this.orgRepository = orgRepository;
-		this.productRepository = productRepository;
 	}
 
 	public OrgSubsidaryDto getOrganization(String organization) {
@@ -59,15 +54,6 @@ public class LookupService {
 				k -> orgRepository.findBySubsidiary(subsidiary.trim(), vendorSubsidiary.trim()));
 	}
 
-	public ProductMasterDTO getProduct(String searchKey) {
-
-		if (searchKey == null || searchKey.isBlank()) {
-			return null;
-		}
-
-		return productCache.computeIfAbsent(searchKey.trim(), productRepository::findByProductSearchKey);
-	}
-
 	public String getOrgName(String itemLineLocation) {
 
 		if (itemLineLocation == null || itemLineLocation.isBlank()) {
@@ -90,7 +76,6 @@ public class LookupService {
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
-		productCache.clear();
 		subsidiaryCache.clear();
 		orgNameShipmentCache.clear();
 		orgExternalInventoryCache.clear();

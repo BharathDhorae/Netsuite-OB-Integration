@@ -1,4 +1,4 @@
-package com.promanatia.openbravonetsuiteintegration.Exception;
+package com.promanatia.openbravonetsuiteintegration.exception;
 
 public class InfrastructureException extends RuntimeException {
 

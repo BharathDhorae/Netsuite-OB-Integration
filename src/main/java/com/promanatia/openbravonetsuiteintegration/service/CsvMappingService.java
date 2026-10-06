@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.promanatia.openbravonetsuiteintegration.DTO.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvParser;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 import com.promanatia.openbravonetsuiteintegration.utility.TransformationUtil;
