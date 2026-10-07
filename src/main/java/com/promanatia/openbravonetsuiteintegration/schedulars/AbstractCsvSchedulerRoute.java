@@ -7,7 +7,6 @@ import com.promanatia.openbravonetsuiteintegration.exception.RowValidationExcept
 import com.promanatia.openbravonetsuiteintegration.repository.EntityMasterRepository;
 import com.promanatia.openbravonetsuiteintegration.repository.FieldMappingRepository;
 import com.promanatia.openbravonetsuiteintegration.service.*;
-import com.promanatia.openbravonetsuiteintegration.utility.CsvAggregationStrategy;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvParser;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvValidator;
 
@@ -47,7 +46,6 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 
 	protected static final Logger logger = LoggerFactory.getLogger(AbstractCsvSchedulerRoute.class);
 
-	protected final CsvAggregationStrategy csvAggregationStrategy;
 	protected final CsvValidator csvValidatorService;
 	protected final CsvMappingService csvMappingService;
 	protected final ErrorCsvService errorCsvService;
@@ -58,13 +56,11 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	protected final EntityMasterRepository entityMasterRepository;
 	protected final LookupService lookupService;
 
-	protected AbstractCsvSchedulerRoute(CsvAggregationStrategy csvAggregationStrategy, CsvValidator csvValidatorService,
-			CsvMappingService csvMappingService, ErrorCsvService errorCsvService,
-			ApplicationLoggerService loggerService, SftpUploadService sftpUploadService, CsvParser csvParser,
-			FieldMappingRepository fieldMappingRepository, EntityMasterRepository entityMasterRepository,
-			LookupService lookupService) {
+	protected AbstractCsvSchedulerRoute(CsvValidator csvValidatorService, CsvMappingService csvMappingService,
+			ErrorCsvService errorCsvService, ApplicationLoggerService loggerService,
+			SftpUploadService sftpUploadService, CsvParser csvParser, FieldMappingRepository fieldMappingRepository,
+			EntityMasterRepository entityMasterRepository, LookupService lookupService) {
 
-		this.csvAggregationStrategy = csvAggregationStrategy;
 		this.csvValidatorService = csvValidatorService;
 		this.csvMappingService = csvMappingService;
 		this.errorCsvService = errorCsvService;
@@ -121,7 +117,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
 					loggerService.error("N/A", "N/A", "N/A",
-							"Infrastructure failure (DB/S3/network) processing file: " + fileName,
+							"Infrastructure failure (DB/network) processing file: " + fileName,
 							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
 				}).handled(false);
 
@@ -164,13 +160,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 		// =================================================================
 		from(getProcessingDirectUri()).routeId(getDirectionLabel() + "-csv-processor")
 
-				.convertBodyTo(String.class).process(exchange -> {
-					String body = exchange.getIn().getBody(String.class);
-					int totalRows = body.split("\\r?\\n").length - 1;
-					logger.info("[{}] CSV loaded successfully. Total data rows : {}", getDirectionLabel(), totalRows);
-				}).aggregate(simple("${exchangeProperty.entityName}"), csvAggregationStrategy).completionSize(10)
-				.completionTimeout(15000).process(exchange -> lookupService.clearCache())
-
+				.convertBodyTo(String.class).process(exchange -> lookupService.clearCache())
 				.process(this::validateFileAndHeaders).process(this::validateRows).process(this::generateMappedCsv)
 
 				.choice().when(simple("${exchangeProperty.validRows.size} > 0"))
@@ -222,21 +212,17 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	private void validateFileAndHeaders(Exchange exchange) {
 
 		String fileContent = exchange.getIn().getBody(String.class);
-
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 
 		List<FieldMappingDTO> mappings;
-
 		String identityColumn;
 
 		try {
 
 			mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
-
 			identityColumn = fieldMappingRepository.getIdentificationColumn(entity.getSourceTableName());
 
 		} catch (Exception e) {
-
 			throw wrapAsInfrastructure("Failed to load field mappings for " + entity.getSourceTableName(), e);
 		}
 
@@ -251,7 +237,6 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			csvValidatorService.validateFile(parsedRows);
 
 			if (parsedRows == null || parsedRows.isEmpty()) {
-
 				throw new RowValidationException("CSV file is empty");
 			}
 
@@ -264,7 +249,6 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			 * Validate file.
 			 */
 			if (parsedRows.size() <= 1) {
-
 				throw new RowValidationException("CSV file is empty or contains only header.");
 			}
 
@@ -281,36 +265,27 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			List<String> rows = new ArrayList<>();
 
 			for (int i = 1; i < parsedRows.size(); i++) {
-
 				String[] row = parsedRows.get(i);
-
 				if (row == null || row.length == 0) {
 					continue;
 				}
-
 				rows.add(csvParser.toCsvRecord(row));
 			}
 
 			logger.info("[{}] Header validation successful. Total data rows: {}", entity.getEntityName(), rows.size());
 
 			exchange.setProperty("mappings", mappings);
-
 			exchange.setProperty("identityColumn", identityColumn);
-
 			exchange.setProperty("headers", headers);
-
 			exchange.setProperty("rows", rows);
 
 		} catch (InfrastructureException ie) {
-
 			throw ie;
 
 		} catch (RowValidationException e) {
-
 			throw e;
 
 		} catch (Exception e) {
-
 			throw new RowValidationException(
 					"File/header validation failed for file " + entity.getEntityName() + ": " + e.getMessage(), e);
 		}
@@ -323,25 +298,19 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	private void validateRows(Exchange exchange) {
 
 		List<String> rows = exchange.getProperty("rows", List.class);
-
 		String[] headers = exchange.getProperty("headers", String[].class);
 
 		List<String> validRows = new ArrayList<>();
-
 		List<String> errorRows = new ArrayList<>();
-
 		Set<String> failedOrders = new HashSet<>();
 
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
-
 		List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
-
 		String identityColumn = exchange.getProperty("identityColumn", String.class);
 
 		for (int i = 0; i < rows.size(); i++) {
 
 			String row = rows.get(i);
-
 			if (row == null || row.isBlank()) {
 				continue;
 			}
@@ -350,12 +319,9 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			 * Parse the COMPLETE CSV record.
 			 */
 			String[] cols = csvParser.parseCsvLine(row);
-
 			String documentNo = getColumnValue(headers, cols, identityColumn);
-
 			String productId = getColumnValue(headers, cols, identityColumn);
-
-			logger.info(productId, entity.getEntityName(), documentNo, "Started processing CSV file.");
+			logger.info(entity.getEntityName(), documentNo, "Started processing CSV file.");
 
 			try {
 
@@ -367,25 +333,19 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				if (!validationErrors.isEmpty()) {
 
 					failedOrders.add(documentNo);
-
 					String errorMessage = String.join(" | ", validationErrors);
-
 					logger.error("Validation failed for Row {} : {}", i + 2, errorMessage);
-
 					loggerService.error(productId, entity.getEntityName(), documentNo, "CSV Validation Failed",
 							errorMessage);
 
 				} else {
-
-					logger.info(productId, entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
+					logger.info(entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
 				}
 
 			} catch (Exception e) {
 
 				if (isInfrastructureFailure(e)) {
-
 					logger.error("Infrastructure failure during row validation, aborting file: {}", e.getMessage());
-
 					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 2)
 							+ " of file for entity " + entity.getEntityName(), e);
 				}
@@ -406,23 +366,17 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			}
 
 			String[] cols = csvParser.parseCsvLine(row);
-
 			String documentNo = getColumnValue(headers, cols, identityColumn);
 
 			if (failedOrders.contains(documentNo)) {
-
 				errorRows.add(row);
-
 			} else {
-
 				validRows.add(row);
 			}
 		}
 
 		exchange.setProperty("validRows", validRows);
-
 		exchange.setProperty("errorRows", errorRows);
-
 		exchange.setProperty("failedOrders", failedOrders);
 	}
 
@@ -464,8 +418,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				return true;
 			}
 			String className = current.getClass().getName();
-			if (className.contains("amazonaws") || className.contains("awssdk") || className.contains("S3Exception")
-					|| className.contains("ConnectException") || className.contains("UnknownHostException")) {
+			if (className.contains("ConnectException") || className.contains("UnknownHostException")) {
 				return true;
 			}
 			current = current.getCause();

@@ -5,7 +5,6 @@ import com.promanatia.openbravonetsuiteintegration.dto.FlowType;
 import com.promanatia.openbravonetsuiteintegration.repository.EntityMasterRepository;
 import com.promanatia.openbravonetsuiteintegration.repository.FieldMappingRepository;
 import com.promanatia.openbravonetsuiteintegration.service.*;
-import com.promanatia.openbravonetsuiteintegration.utility.CsvAggregationStrategy;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvParser;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvValidator;
 
@@ -27,14 +26,14 @@ public class ObToNetsuiteSchedulerRoute extends AbstractCsvSchedulerRoute {
 
 	private final SftpConfig sftpConfig;
 
-	public ObToNetsuiteSchedulerRoute(SftpConfig sftpConfig, CsvAggregationStrategy csvAggregationStrategy,
-			CsvValidator csvValidatorService, CsvMappingService csvMappingService, ErrorCsvService errorCsvService,
+	public ObToNetsuiteSchedulerRoute(SftpConfig sftpConfig, CsvValidator csvValidatorService,
+			CsvMappingService csvMappingService, ErrorCsvService errorCsvService,
 			ApplicationLoggerService loggerService, SftpUploadService sftpUploadService, CsvParser csvParser,
 			FieldMappingRepository fieldMappingRepository, EntityMasterRepository entityMasterRepository,
 			LookupService lookupService) {
 
-		super(csvAggregationStrategy, csvValidatorService, csvMappingService, errorCsvService, loggerService,
-				sftpUploadService, csvParser, fieldMappingRepository, entityMasterRepository, lookupService);
+		super(csvValidatorService, csvMappingService, errorCsvService, loggerService, sftpUploadService, csvParser,
+				fieldMappingRepository, entityMasterRepository, lookupService);
 		this.sftpConfig = sftpConfig;
 	}
 
