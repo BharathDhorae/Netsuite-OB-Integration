@@ -37,6 +37,7 @@ public class ItemLineInventoryLocationRule implements TransformationRule {
 		String organization = row.get("organization");
 		String productCategory = row.get("ProductcatParent");
 		String businessPartner = row.get("BusinessPartnerExtID");
+		String documentNo = row.get("documentno");
 
 		// Aksharpith Online - Herbal
 		if ("Aksharpith Online".equalsIgnoreCase(organization) && "10000".equalsIgnoreCase(productCategory)) {
@@ -81,6 +82,17 @@ public class ItemLineInventoryLocationRule implements TransformationRule {
 
 		if (dto == null && organization != null && !organization.isBlank()) {
 			dto = lookupService.getOrganization(organization);
+			row.setOrganization(dto);
+		}
+
+		/*
+		 * If askharpith inventory location name is present and document number ends
+		 * with "A", then use that to lookup the organization
+		 */
+		String aksharpithInventoryLocationName = dto != null ? dto.getAksharpithInventoryLocationName() : null;
+		if (documentNo.endsWith("A") && aksharpithInventoryLocationName != null
+				&& !aksharpithInventoryLocationName.isBlank()) {
+			dto = lookupService.getOrganization(aksharpithInventoryLocationName);
 			row.setOrganization(dto);
 		}
 

@@ -32,7 +32,8 @@ public class OrgSubsidaryRepository {
 				       internal_vendor,
 				       financial_location,
 				       internal_customer,
-				       external_id_inventory_location
+				       external_id_inventory_location,
+				       aksharpith_inventory_location_name
 				FROM ob_ns_org_v3
 				WHERE isactive = 'Y'
 				""");
@@ -64,6 +65,7 @@ public class OrgSubsidaryRepository {
 				entity.setFinancialLocation(rs.getString("financial_location"));
 				entity.setInternalCustomer(rs.getString("internal_customer"));
 				entity.setExternalInventoryLocation(rs.getString("external_id_inventory_location"));
+				entity.setAksharpithInventoryLocationName(rs.getString("aksharpith_inventory_location_name"));
 
 				return entity;
 			}, params.toArray());
