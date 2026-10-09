@@ -10,6 +10,8 @@ import com.promanatia.openbravonetsuiteintegration.service.*;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvParser;
 import com.promanatia.openbravonetsuiteintegration.utility.CsvValidator;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.sql.SQLException;
@@ -23,8 +25,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.EndpointConsumerBuilder;
 import org.apache.camel.builder.EndpointProducerBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 /**
@@ -42,9 +42,8 @@ import org.springframework.dao.DataAccessException;
  * on flowDirection — each one's completionSize/Timeout batch is naturally
  * isolated from the other's.
  */
+@Slf4j
 public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
-
-	protected static final Logger logger = LoggerFactory.getLogger(AbstractCsvSchedulerRoute.class);
 
 	protected final CsvValidator csvValidatorService;
 	protected final CsvMappingService csvMappingService;
@@ -202,7 +201,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 
 		exchange.setProperty("entity", entity);
 		exchange.setProperty("entityName", entity.getEntityName());
-		logger.info("Started processing file [{}] direction [{}]", fileName, getDirectionLabel());
+		log.info("Started processing file [{}] direction [{}]", fileName, getDirectionLabel());
 	}
 
 	// ---------------------------------------------------------------------
@@ -272,7 +271,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				rows.add(csvParser.toCsvRecord(row));
 			}
 
-			logger.info("[{}] Header validation successful. Total data rows: {}", entity.getEntityName(), rows.size());
+			log.info("[{}] Header validation successful. Total data rows: {}", entity.getEntityName(), rows.size());
 
 			exchange.setProperty("mappings", mappings);
 			exchange.setProperty("identityColumn", identityColumn);
@@ -321,7 +320,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			String[] cols = csvParser.parseCsvLine(row);
 			String documentNo = getColumnValue(headers, cols, identityColumn);
 			String productId = getColumnValue(headers, cols, identityColumn);
-			logger.info(entity.getEntityName(), documentNo, "Started processing CSV file.");
+			log.info(entity.getEntityName(), documentNo, "Started processing CSV file.");
 
 			try {
 
@@ -334,18 +333,18 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 
 					failedOrders.add(documentNo);
 					String errorMessage = String.join(" | ", validationErrors);
-					logger.error("Validation failed for Row {} : {}", i + 2, errorMessage);
+					log.error("Validation failed for Row {} : {}", i + 2, errorMessage);
 					loggerService.error(productId, entity.getEntityName(), documentNo, "CSV Validation Failed",
 							errorMessage);
 
 				} else {
-					logger.info(entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
+					log.info(entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
 				}
 
 			} catch (Exception e) {
 
 				if (isInfrastructureFailure(e)) {
-					logger.error("Infrastructure failure during row validation, aborting file: {}", e.getMessage());
+					log.error("Infrastructure failure during row validation, aborting file: {}", e.getMessage());
 					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 2)
 							+ " of file for entity " + entity.getEntityName(), e);
 				}

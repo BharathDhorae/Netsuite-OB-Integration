@@ -150,7 +150,7 @@ public class OrgSubsidaryRepository {
 	public String getOrgNameByLocationColumn(String itemLineLocation) {
 
 		String sql = """
-				SELECT ad_org_nme
+				SELECT ad_org_name
 				FROM ob_ns_org_v3
 				WHERE itemline_location = ?
 				AND isactive='Y'

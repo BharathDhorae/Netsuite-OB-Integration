@@ -26,16 +26,11 @@ public class ReceivingInventoryLocationRule implements TransformationRule {
 
 		String businessPartnerExtId = row.get("BusinessPartnerExtID");
 
-		if (!row.isInterCompany()) {
-			return "";
-		}
-
-		if (businessPartnerExtId == null || businessPartnerExtId.isBlank()) {
+		if (!row.isInterCompany() || businessPartnerExtId == null || businessPartnerExtId.isEmpty()) {
 			return "";
 		}
 
 		String externalInventoryLocation = lookupService.getExternalInventoryLocation(businessPartnerExtId);
-
 		return externalInventoryLocation == null ? "" : externalInventoryLocation;
 	}
 }
