@@ -10,7 +10,7 @@ import com.promanatia.openbravonetsuiteintegration.dto.EntityMasterDTO;
 @Component
 public class FileNameGenerator {
 
-	private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+	private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
 	public String buildSuccessFileName(EntityMasterDTO entity) {
 		String dateTime = LocalDateTime.now().format(FILE_NAME_FORMATTER);
