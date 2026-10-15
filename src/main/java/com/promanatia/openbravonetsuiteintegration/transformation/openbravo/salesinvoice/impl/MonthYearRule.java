@@ -17,7 +17,13 @@ public class MonthYearRule implements TransformationRule {
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		return DateUtil.toMonthYear(row.get("DateInvoiced"));
+		String value = row.get("DateInvoiced");
+
+		if (value == null || value.isBlank()) {
+			value = row.get("MovementDate");
+		}
+
+		return DateUtil.toMonthYear(value);
 	}
 
 }
