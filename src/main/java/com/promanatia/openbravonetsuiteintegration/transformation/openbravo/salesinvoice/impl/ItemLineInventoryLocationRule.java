@@ -70,11 +70,6 @@ public class ItemLineInventoryLocationRule implements TransformationRule {
 			return getInventoryLocation("BAPS Shayona - Robbinsville Cafe", "Akshardham Cafe Express - SHA Inv");
 		}
 
-		// BAPS Shayona Robbinsville Cafe-Cafe
-		if ("BAPS Shayona - Robbinsville Cafe".equalsIgnoreCase(organization)) {
-			return getInventoryLocation("BAPS Shayona - Robbinsville Cafe", "Akshardham Café - SHA Inv");
-		}
-
 		/*
 		 * Default organization lookup
 		 */
