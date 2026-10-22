@@ -181,4 +181,22 @@ public class OrgSubsidaryRepository {
 			return null;
 		}
 	}
+
+	public String getBankAccountBySubsidiary(String susdiary, String finanicialLocation) {
+
+		String sql = """
+				SELECT bank_account
+				FROM ob_ns_org_v3
+				WHERE subsidiary = ?
+				AND financial_location = ?
+				AND isactive='Y'
+				LIMIT 1
+				""";
+
+		try {
+			return jdbcTemplate.queryForObject(sql, String.class, susdiary, finanicialLocation);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
 }

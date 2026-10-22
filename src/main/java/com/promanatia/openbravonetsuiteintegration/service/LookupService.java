@@ -18,6 +18,7 @@ public class LookupService {
 	private final Map<String, OrgSubsidaryDto> subsidiaryCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgNameShipmentCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgExternalInventoryCache = new ConcurrentHashMap<>();
+	private final Map<String, String> bankAccountCache = new ConcurrentHashMap<>();
 
 	public LookupService(OrgSubsidaryRepository orgRepository) {
 
@@ -73,11 +74,24 @@ public class LookupService {
 				orgRepository::findExternalInventoryLocation);
 	}
 
+	public String getBankAccountBySubsidiary(String subsidiary, String financialLocation) {
+
+		if (subsidiary == null || subsidiary.isBlank()) {
+			return null;
+		}
+
+		String key = subsidiary.trim() + "|" + (financialLocation == null ? "" : financialLocation.trim());
+
+		return bankAccountCache.computeIfAbsent(key,
+				k -> orgRepository.getBankAccountBySubsidiary(subsidiary.trim(), financialLocation.trim()));
+	}
+
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
 		subsidiaryCache.clear();
 		orgNameShipmentCache.clear();
 		orgExternalInventoryCache.clear();
+		bankAccountCache.clear();
 	}
 }
