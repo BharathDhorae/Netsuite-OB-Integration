@@ -12,6 +12,7 @@ import com.promanatia.openbravonetsuiteintegration.utility.TransformationUtil;
 @Service
 public class CsvMappingService {
 
+	private static final String CSV_LINE_SEPARATOR = "\r\n";
 	private final CsvParser csvParser;
 	private final TransformationUtil transformationUtil;
 
@@ -33,7 +34,7 @@ public class CsvMappingService {
 			}
 		}
 
-		outputCsv.append("\n");
+		outputCsv.append(CSV_LINE_SEPARATOR);
 
 		// Data
 		for (String row : validRows) {
@@ -47,7 +48,7 @@ public class CsvMappingService {
 				}
 			}
 
-			outputCsv.append("\n");
+			outputCsv.append(CSV_LINE_SEPARATOR);
 		}
 
 		return outputCsv.toString();
