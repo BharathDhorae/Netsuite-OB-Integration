@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.repository.OrgSubsidaryRepository;
 
 @Service
@@ -16,9 +17,9 @@ public class LookupService {
 	private final Map<String, OrgSubsidaryDto> organizationCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> businessPartnerCache = new ConcurrentHashMap<>();
 	private final Map<String, OrgSubsidaryDto> subsidiaryCache = new ConcurrentHashMap<>();
-	private final Map<String, String> orgNameShipmentCache = new ConcurrentHashMap<>();
+	//private final Map<String, String> orgNameShipmentCache = new ConcurrentHashMap<>();
 	private final Map<String, String> orgExternalInventoryCache = new ConcurrentHashMap<>();
-	private final Map<String, String> bankAccountCache = new ConcurrentHashMap<>();
+	private final Map<String, OrgWarehouseBinAccountDTO> orgWareouseBinAccountCache = new ConcurrentHashMap<>();
 
 	public LookupService(OrgSubsidaryRepository orgRepository) {
 
@@ -55,14 +56,14 @@ public class LookupService {
 				k -> orgRepository.findBySubsidiary(subsidiary.trim(), vendorSubsidiary.trim()));
 	}
 
-	public String getOrgName(String itemLineLocation) {
-
-		if (itemLineLocation == null || itemLineLocation.isBlank()) {
-			return null;
-		}
-
-		return orgNameShipmentCache.computeIfAbsent(itemLineLocation.trim(), orgRepository::getOrgNameByLocationColumn);
-	}
+//	public String getOrgName(String itemLineLocation) {
+//
+//		if (itemLineLocation == null || itemLineLocation.isBlank()) {
+//			return null;
+//		}
+//
+//		return orgNameShipmentCache.computeIfAbsent(itemLineLocation.trim(), orgRepository::getOrgNameByLocationColumn);
+//	}
 
 	public String getExternalInventoryLocation(String externalInventoryLocation) {
 
@@ -74,7 +75,7 @@ public class LookupService {
 				orgRepository::findExternalInventoryLocation);
 	}
 
-	public String getBankAccountBySubsidiary(String subsidiary, String financialLocation) {
+	public OrgWarehouseBinAccountDTO getBankAccountBySubsidiary(String subsidiary, String financialLocation) {
 
 		if (subsidiary == null || subsidiary.isBlank()) {
 			return null;
@@ -82,16 +83,16 @@ public class LookupService {
 
 		String key = subsidiary.trim() + "|" + (financialLocation == null ? "" : financialLocation.trim());
 
-		return bankAccountCache.computeIfAbsent(key,
-				k -> orgRepository.getBankAccountBySubsidiary(subsidiary.trim(), financialLocation.trim()));
+		return orgWareouseBinAccountCache.computeIfAbsent(key,
+				k -> orgRepository.getOrgWarehousBinBySubsidiary(subsidiary.trim(), financialLocation.trim()));
 	}
 
 	public void clearCache() {
 		organizationCache.clear();
 		businessPartnerCache.clear();
 		subsidiaryCache.clear();
-		orgNameShipmentCache.clear();
+		//orgNameShipmentCache.clear();
 		orgExternalInventoryCache.clear();
-		bankAccountCache.clear();
+		orgWareouseBinAccountCache.clear();
 	}
 }

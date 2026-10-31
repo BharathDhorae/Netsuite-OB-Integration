@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 
 public class RowContext {
 
@@ -22,6 +23,8 @@ public class RowContext {
 	private OrgSubsidaryDto businessPartner;
 
 	private OrgSubsidaryDto subsidiaryDto;
+
+	private OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO;
 
 	private String orgNameLocation;
 
@@ -137,6 +140,14 @@ public class RowContext {
 
 	public void setSubsidiaryDto(OrgSubsidaryDto subsidiaryDto) {
 		this.subsidiaryDto = subsidiaryDto;
+	}
+
+	public OrgWarehouseBinAccountDTO getOrgwarehouseAccountDto() {
+		return orgWarehouseBinAccountDTO;
+	}
+
+	public void setOrgwarehouseAccountDto(OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO) {
+		this.orgWarehouseBinAccountDTO = orgWarehouseBinAccountDTO;
 	}
 
 	public String getOrgNameLocation() {

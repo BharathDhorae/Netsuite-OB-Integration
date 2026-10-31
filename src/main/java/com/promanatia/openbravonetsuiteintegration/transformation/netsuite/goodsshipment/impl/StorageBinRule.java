@@ -1,34 +1,38 @@
 package com.promanatia.openbravonetsuiteintegration.transformation.netsuite.goodsshipment.impl;
 
-
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class OrgNameByLocationRule implements TransformationRule {
+public class StorageBinRule implements TransformationRule {
 
 	private final LookupService lookupService;
 
-	private OrgNameByLocationRule(LookupService lookupService) {
+	public StorageBinRule(LookupService lookupService) {
 		this.lookupService = lookupService;
 	}
 
 	@Override
 	public String getRuleCode() {
-		return "ORGNAMEBYLOCATION";
+		return "STORAGEBIN";
 	}
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
+		OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO = row.getOrgwarehouseAccountDto();
 
-		if (row.getOrgNameLocation() == null) {
-			row.setOrgNameLocation(lookupService.getOrgName(row.get("Inventory Location")));
+		if (orgWarehouseBinAccountDTO == null) {
+			orgWarehouseBinAccountDTO = lookupService.getBankAccountBySubsidiary(row.get("Subsidiary"),
+					row.get("Financial location"));
+			row.setOrgwarehouseAccountDto(orgWarehouseBinAccountDTO);
 		}
-		return row.getOrgNameLocation();
+		return orgWarehouseBinAccountDTO == null ? "" : orgWarehouseBinAccountDTO.getStorageBin();
+
 	}
 
 }

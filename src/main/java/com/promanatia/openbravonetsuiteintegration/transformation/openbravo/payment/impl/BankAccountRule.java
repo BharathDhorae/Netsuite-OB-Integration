@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
 import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
@@ -54,8 +55,8 @@ public class BankAccountRule implements TransformationRule {
 		}
 
 		// Find bank account using subsidiary and financial location
-		String bankAccount = lookupService.getBankAccountBySubsidiary(subsidiary, financialLocation);
-		return bankAccount != null ? bankAccount : "";
+		OrgWarehouseBinAccountDTO bankAccount = lookupService.getBankAccountBySubsidiary(subsidiary, financialLocation);
+		return bankAccount.getBanckAccount() != null ? bankAccount.getBanckAccount() : "";
 	}
 
 }

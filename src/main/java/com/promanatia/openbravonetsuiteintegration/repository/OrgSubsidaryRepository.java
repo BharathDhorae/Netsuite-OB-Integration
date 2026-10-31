@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 
 @Repository
 public class OrgSubsidaryRepository {
@@ -149,21 +150,21 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
-	public String getOrgNameByLocationColumn(String itemLineLocation) {
-
-		String sql = """
-				SELECT ad_org_name
-				FROM ob_ns_org_v3
-				WHERE itemline_location = ?
-				AND isactive='Y'
-				""";
-
-		try {
-			return jdbcTemplate.queryForObject(sql, String.class, itemLineLocation);
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
+//	public String getOrgNameByLocationColumn(String itemLineLocation) {
+//
+//		String sql = """
+//				SELECT ad_org_name
+//				FROM ob_ns_org_v3
+//				WHERE itemline_location = ?
+//				AND isactive='Y'
+//				""";
+//
+//		try {
+//			return jdbcTemplate.queryForObject(sql, String.class, itemLineLocation);
+//		} catch (EmptyResultDataAccessException e) {
+//			return null;
+//		}
+//	}
 
 	public String findExternalInventoryLocation(String itemLineLocation) {
 
@@ -182,10 +183,13 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
-	public String getBankAccountBySubsidiary(String susdiary, String finanicialLocation) {
+	public OrgWarehouseBinAccountDTO getOrgWarehousBinBySubsidiary(String susdiary, String finanicialLocation) {
 
 		String sql = """
-				SELECT bank_account
+				SELECT bank_account,
+				ad_org_name,
+				warehouse,
+				storage_bin
 				FROM ob_ns_org_v3
 				WHERE subsidiary = ?
 				AND financial_location = ?
@@ -194,7 +198,15 @@ public class OrgSubsidaryRepository {
 				""";
 
 		try {
-			return jdbcTemplate.queryForObject(sql, String.class, susdiary, finanicialLocation);
+			return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+
+				OrgWarehouseBinAccountDTO entity = new OrgWarehouseBinAccountDTO();
+				entity.setBanckAccount(rs.getString("bank_account"));
+				entity.setOrganization(rs.getString("ad_org_name"));
+				entity.setWarehouse(rs.getString("warehouse"));
+				entity.setStorageBin(rs.getString("storage_bin"));
+				return entity;
+			}, susdiary, finanicialLocation);
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
