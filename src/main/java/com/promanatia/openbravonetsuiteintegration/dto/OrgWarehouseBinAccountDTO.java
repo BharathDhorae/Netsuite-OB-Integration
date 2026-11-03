@@ -9,5 +9,7 @@ public class OrgWarehouseBinAccountDTO {
 	private String warehouse;
 	private String storageBin;
 	private String organization;
+	private String purchaseOrderPriceList;
+	private String salesOrderPriceList;
 
 }

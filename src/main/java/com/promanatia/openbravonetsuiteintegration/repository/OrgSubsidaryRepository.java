@@ -150,22 +150,6 @@ public class OrgSubsidaryRepository {
 		}
 	}
 
-//	public String getOrgNameByLocationColumn(String itemLineLocation) {
-//
-//		String sql = """
-//				SELECT ad_org_name
-//				FROM ob_ns_org_v3
-//				WHERE itemline_location = ?
-//				AND isactive='Y'
-//				""";
-//
-//		try {
-//			return jdbcTemplate.queryForObject(sql, String.class, itemLineLocation);
-//		} catch (EmptyResultDataAccessException e) {
-//			return null;
-//		}
-//	}
-
 	public String findExternalInventoryLocation(String itemLineLocation) {
 
 		String sql = """
@@ -189,7 +173,9 @@ public class OrgSubsidaryRepository {
 				SELECT bank_account,
 				ad_org_name,
 				warehouse,
-				storage_bin
+				storage_bin,
+				purchase_order_pricelist,
+				sales_order_pricelist
 				FROM ob_ns_org_v3
 				WHERE subsidiary = ?
 				AND financial_location = ?
@@ -205,6 +191,8 @@ public class OrgSubsidaryRepository {
 				entity.setOrganization(rs.getString("ad_org_name"));
 				entity.setWarehouse(rs.getString("warehouse"));
 				entity.setStorageBin(rs.getString("storage_bin"));
+				entity.setPurchaseOrderPriceList(rs.getString("purchase_order_pricelist"));
+				entity.setSalesOrderPriceList(rs.getString("sales_order_pricelist"));
 				return entity;
 			}, susdiary, finanicialLocation);
 		} catch (EmptyResultDataAccessException e) {

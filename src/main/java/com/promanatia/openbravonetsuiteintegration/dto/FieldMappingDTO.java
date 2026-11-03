@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class FieldMappingDTO {
 
+	private String entityName;
 	private String sourceColumn;
 	private String targetColumn;
 	private String transformationRuleCode;

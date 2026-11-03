@@ -21,6 +21,7 @@ public class FieldMappingRepository {
 
 		String sql = """
 				SELECT
+					entity_name,
 				    source_column,
 				    target_column,
 				    transformation_rule_code,
@@ -36,6 +37,7 @@ public class FieldMappingRepository {
 
 			FieldMappingDTO mapping = new FieldMappingDTO();
 
+			mapping.setEntityName(rs.getString("entity_name"));
 			mapping.setSourceColumn(rs.getString("source_column"));
 			mapping.setTargetColumn(rs.getString("target_column"));
 			mapping.setTransformationRuleCode(rs.getString("transformation_rule_code"));
