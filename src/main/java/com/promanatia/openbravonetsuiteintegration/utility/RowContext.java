@@ -26,7 +26,7 @@ public class RowContext {
 
 	private OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO;
 
-	private String orgNameLocation;
+	private String taxRule;;
 
 	public RowContext(String[] headers, String[] columns) {
 
@@ -150,11 +150,11 @@ public class RowContext {
 		this.orgWarehouseBinAccountDTO = orgWarehouseBinAccountDTO;
 	}
 
-	public String getOrgNameLocation() {
-		return orgNameLocation;
+	public String getTaxRule() {
+		return taxRule;
 	}
 
-	public void setOrgNameLocation(String orgNameLocation) {
-		this.orgNameLocation = orgNameLocation;
+	public void setTaxRule(String taxRule) {
+		this.taxRule = taxRule;
 	}
 }

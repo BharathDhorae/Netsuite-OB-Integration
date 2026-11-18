@@ -175,7 +175,8 @@ public class OrgSubsidaryRepository {
 				warehouse,
 				storage_bin,
 				purchase_order_pricelist,
-				sales_order_pricelist
+				sales_order_pricelist,
+				business_partner_tax_category
 				FROM ob_ns_org_v3
 				WHERE subsidiary = ?
 				AND financial_location = ?
@@ -193,6 +194,7 @@ public class OrgSubsidaryRepository {
 				entity.setStorageBin(rs.getString("storage_bin"));
 				entity.setPurchaseOrderPriceList(rs.getString("purchase_order_pricelist"));
 				entity.setSalesOrderPriceList(rs.getString("sales_order_pricelist"));
+				entity.setSalesOrderPriceList(rs.getString("business_partner_tax_category"));
 				return entity;
 			}, susdiary, finanicialLocation);
 		} catch (EmptyResultDataAccessException e) {

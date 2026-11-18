@@ -11,5 +11,6 @@ public class OrgWarehouseBinAccountDTO {
 	private String organization;
 	private String purchaseOrderPriceList;
 	private String salesOrderPriceList;
+	private String businessPartnerTaxCategory;
 
 }

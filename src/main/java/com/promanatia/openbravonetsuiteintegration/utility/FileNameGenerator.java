@@ -10,15 +10,15 @@ import com.promanatia.openbravonetsuiteintegration.dto.EntityMasterDTO;
 @Component
 public class FileNameGenerator {
 
-	private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+	private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("MMddyy-HHmmss");
 
 	public String buildSuccessFileName(EntityMasterDTO entity) {
 		String dateTime = LocalDateTime.now().format(FILE_NAME_FORMATTER);
-		return dateTime + "_" + entity.getEntityName() + ".csv";
+		return entity.getTargetObjectName() + "_" + dateTime + ".csv";
 	}
 
 	public String buildErrorFileName(EntityMasterDTO entity) {
 		String dateTime = LocalDateTime.now().format(FILE_NAME_FORMATTER);
-		return dateTime + "_" + entity.getEntityName() + "_ERROR.csv";
+		return entity.getTargetObjectName() + "_" + dateTime + "_ERROR.csv";
 	}
 }

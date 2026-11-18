@@ -176,7 +176,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	private void resolveEntityAndFileId(Exchange exchange) {
 
 		String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-		String entityName = fileName.split("_")[2].replace(".csv", "");
+		String entityName = fileName.split("_")[1].replace(".csv", "");
 
 		// Deterministic per-file identifier for idempotent downstream writes.
 		// Reusing the source file name (not a random UUID) means a retried
