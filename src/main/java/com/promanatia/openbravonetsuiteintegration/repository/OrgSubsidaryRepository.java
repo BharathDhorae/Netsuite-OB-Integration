@@ -194,7 +194,7 @@ public class OrgSubsidaryRepository {
 				entity.setStorageBin(rs.getString("storage_bin"));
 				entity.setPurchaseOrderPriceList(rs.getString("purchase_order_pricelist"));
 				entity.setSalesOrderPriceList(rs.getString("sales_order_pricelist"));
-				entity.setSalesOrderPriceList(rs.getString("business_partner_tax_category"));
+				entity.setBusinessPartnerTaxCategory(rs.getString("business_partner_tax_category"));
 				return entity;
 			}, susdiary, finanicialLocation);
 		} catch (EmptyResultDataAccessException e) {
