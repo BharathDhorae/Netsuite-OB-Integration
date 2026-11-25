@@ -15,7 +15,7 @@ public class ApplicationLogDTO {
 
 	private Long id;
 	private Timestamp logTime;
-	private String product;
+	private String flow;
 	private String flowType;
 	private String documentId;
 	private String logLevel;

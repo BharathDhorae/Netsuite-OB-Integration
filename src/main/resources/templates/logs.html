@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Application Logs</title>
+
+	<link rel="stylesheet" th:href="@{/css/logs.css}">
+</head>
+
+<body>
+
+	<div class="container">
+
+		<!-- Header -->
+		<div class="header">
+
+			<div class="header-content">
+				<h1>Application Logs</h1>
+				<p>Application integration and processing logs</p>
+			</div>
+
+			<!-- Logout Button -->
+			<form th:action="@{/logout}" method="post">
+				<button type="submit" class="logout-btn">
+					Logout
+				</button>
+			</form>
+
+		</div>
+
+		<!-- Search Section -->
+		<div class="search-container">
+
+			<form th:action="@{/logs}" method="get" class="search-form">
+
+				<!-- Flow Level -->
+				<div class="filter-group">
+					<label for="flow">Flow Direction</label>
+
+					<select id="flow" name="flow">
+						<option value="">All Flows</option>
+						<option value="OPENBRAVO TO NETSUITE" th:selected="${flow == 'OPENBRAVO TO NETSUITE'}">
+							OPENBRAVO TO NETSUITE
+						</option>
+						<option value="NETSUITE TO OPENBRAVO" th:selected="${flow == 'NETSUITE TO OPENBRAVO'}">
+							NETSUITE TO OPENBRAVO
+						</option>
+					</select>
+				</div>
+
+				<!-- Flow Type -->
+				<div class="filter-group">
+					<label for="flowType">Flow Type</label>
+
+					<select id="flowType" name="flowType">
+						<option value="">All Flow Types</option>
+
+						<option th:each="flow : ${flowTypes}" th:value="${flow}" th:text="${flow}"
+							th:selected="${flowType == flow}">
+						</option>
+					</select>
+				</div>
+
+				<!-- Log Level -->
+				<div class="filter-group">
+					<label for="logLevel">Log Level</label>
+
+					<select id="logLevel" name="logLevel">
+
+						<option value="">All Log Levels</option>
+
+						<option value="INFO" th:selected="${logLevel == 'INFO'}">
+							INFO
+						</option>
+
+						<option value="WARN" th:selected="${logLevel == 'WARN'}">
+							WARN
+						</option>
+
+						<option value="ERROR" th:selected="${logLevel == 'ERROR'}">
+							ERROR
+						</option>
+
+						<option value="DEBUG" th:selected="${logLevel == 'DEBUG'}">
+							DEBUG
+						</option>
+
+					</select>
+				</div>
+
+				<!-- Log Date -->
+				<div class="filter-group">
+					<label for="logDate">Log Date</label>
+
+					<input type="date" id="logDate" name="logDate" th:value="${logDate}">
+				</div>
+
+				<!-- Search and Reset -->
+				<div class="filter-buttons">
+
+					<button type="submit" class="search-btn">
+						Search
+					</button>
+
+					<a th:href="@{/logs}" class="reset-btn">
+						Reset
+					</a>
+
+				</div>
+
+			</form>
+
+		</div>
+
+		<!-- Logs Table -->
+		<div class="table-container">
+
+			<table class="logs-table">
+
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Log Time</th>
+						<th>Flow Direction</th>
+						<th>Flow Type</th>
+						<th>Log Level</th>
+						<th>Message</th>
+						<th>Error Message</th>
+					</tr>
+				</thead>
+
+				<tbody>
+
+					<tr th:each="log : ${logs}">
+
+						<td th:text="${log.id}"></td>
+
+						<td th:text="${log.logTime}"></td>
+
+						<td th:text="${log.flow}"></td>
+
+						<td th:text="${log.flowType}"></td>
+
+						<td>
+							<span class="log-level" th:classappend="${log.logLevel == 'ERROR'} ? ' log-error' :
+                                  (${log.logLevel == 'WARN'} ? ' log-warn' :
+                                  (${log.logLevel == 'DEBUG'} ? ' log-debug' : ' log-info'))"
+								th:text="${log.logLevel}">
+							</span>
+						</td>
+
+						<td class="message" th:text="${log.message}">
+						</td>
+
+						<td class="error-message" th:text="${log.errorMessage}">
+						</td>
+
+					</tr>
+
+					<!-- No Data -->
+					<tr th:if="${#lists.isEmpty(logs)}">
+
+						<td colspan="7" class="no-data">
+							No application logs found.
+						</td>
+
+					</tr>
+
+				</tbody>
+
+			</table>
+
+		</div>
+
+		<!-- Pagination -->
+		<div class="pagination" th:if="${size != 0}">
+
+			<a th:if="${page > 1}"
+				th:href="@{/logs(page=${page - 1}, size=${size}, flow=${flow}, flowType=${flowType}, logLevel=${logLevel}, logDate=${logDate})}">
+				Previous
+			</a>
+
+			<span class="current-page">
+				Page <span th:text="${page}"></span>
+			</span>
+
+			<a th:if="${logs.size() == size}"
+				th:href="@{/logs(page=${page + 1}, size=${size}, flow=${flow}, flowType=${flowType}, logLevel=${logLevel}, logDate=${logDate})}">
+				Next
+			</a>
+
+		</div>
+
+		<!-- Rows Per Page -->
+		<div class="rows-per-page">
+
+			<label for="size">Rows per page:</label>
+
+			<form th:action="@{/logs}" method="get">
+
+				<input type="hidden" name="flow" th:value="${flow}">
+				<input type="hidden" name="flowType" th:value="${flowType}">
+				<input type="hidden" name="logLevel" th:value="${logLevel}">
+				<input type="hidden" name="logDate" th:value="${logDate}">
+
+				<select id="size" name="size" onchange="this.form.submit()">
+					<option value="10" th:selected="${size == 10}">10</option>
+					<option value="20" th:selected="${size == 20}">20</option>
+					<option value="50" th:selected="${size == 50}">50</option>
+					<option value="100" th:selected="${size == 100}">100</option>
+					<option value="0" th:selected="${size == 0}">All</option>
+				</select>
+
+			</form>
+
+		</div>
+
+	</div>
+
+</body>
+
+</html>

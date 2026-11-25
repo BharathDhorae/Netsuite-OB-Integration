@@ -12,8 +12,8 @@ public class ApplicationLoggerService {
 	@Autowired
 	private ApplicationLogRepository repository;
 
-	public void error(String product, String flowType, String documentId, String message, String errorMessage) {
-		repository.save(ApplicationLogDTO.builder().product(product).flowType(flowType).documentId(documentId)
+	public void error(String flow, String flowType, String documentId, String message, String errorMessage) {
+		repository.save(ApplicationLogDTO.builder().flow(flow).flowType(flowType).documentId(documentId)
 				.logLevel("ERROR").message(message).errorMessage(errorMessage).build());
 	}
 }

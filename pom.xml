@@ -45,62 +45,74 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
+        
+          <!-- Spring Security -->
+     <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
 
-        <!-- PostgreSQL -->
+		<!-- PostgreSQL -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
 
-        <!-- Apache Camel -->
+		<!-- Apache Camel -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-boot-starter</artifactId>
             <version>${camel.version}</version>
         </dependency>
 
-        <!-- Camel FTP / SFTP -->
+		<!-- Camel FTP / SFTP -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-ftp-starter</artifactId>
             <version>${camel.version}</version>
         </dependency>
 
-        <!-- Camel Management -->
+		<!-- Camel Management -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-management-starter</artifactId>
             <version>${camel.version}</version>
         </dependency>
 
-        <!-- Camel Endpoint DSL -->
+		<!-- Camel Endpoint DSL -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-endpointdsl</artifactId>
             <version>${camel.version}</version>
         </dependency>
 
-        <!-- Commons CSV -->
+		<!-- Commons CSV -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.10.0</version>
         </dependency>
 
-        <!-- Lombok -->
+		<!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Actuator -->
+		<!-- Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Tests -->
+		<!-- Email notifications -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+		<!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

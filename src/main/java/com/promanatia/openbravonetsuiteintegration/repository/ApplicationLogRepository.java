@@ -1,5 +1,7 @@
 package com.promanatia.openbravonetsuiteintegration.repository;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,7 +25,7 @@ public class ApplicationLogRepository {
 				INSERT INTO apache_application_logs
 				(
 				    log_time,
-				    product,
+				    flow,
 				    flow_type,
 				    document_id,
 				    log_level,
@@ -37,7 +39,7 @@ public class ApplicationLogRepository {
 				)
 				""";
 
-		jdbcTemplate.update(sql, log.getProduct(), log.getFlowType(), log.getDocumentId(), log.getLogLevel(),
+		jdbcTemplate.update(sql, log.getFlow(), log.getFlowType(), log.getDocumentId(), log.getLogLevel(),
 				log.getMessage(), log.getErrorMessage());
 	}
 
@@ -51,31 +53,83 @@ public class ApplicationLogRepository {
 		return jdbcTemplate.update(sql, retentionDays);
 	}
 
-	public List<ApplicationLogDTO> findLogs(int page, int size) {
+	public List<ApplicationLogDTO> findLogs(int page, int size, String flow, String flowType, String logLevel,
+			String logDate) {
 
 		int offset = (page - 1) * size;
 
-		String sql = """
+		StringBuilder sql = new StringBuilder("""
 				SELECT
 				    id,
 				    log_time,
-				    product,
+				    flow,
 				    flow_type,
-				    document_id,
 				    log_level,
 				    message,
 				    error_message
 				FROM apache_application_logs
-				ORDER BY log_time DESC
-				LIMIT ? OFFSET ?
+				WHERE 1=1
+				""");
+
+		List<Object> params = new java.util.ArrayList<>();
+
+		// Flow Filter
+		if (flow != null && !flow.isBlank()) {
+			sql.append(" AND flow = ?");
+			params.add(flow);
+		}
+
+		// Flow Type Filter
+		if (flowType != null && !flowType.isBlank()) {
+			sql.append(" AND flow_type = ?");
+			params.add(flowType);
+		}
+
+		// Log Level Filter
+		if (logLevel != null && !logLevel.isBlank()) {
+			sql.append(" AND log_level = ?");
+			params.add(logLevel);
+		}
+
+		// Log Date Filter
+		if (logDate != null && !logDate.isBlank()) {
+
+			LocalDate date = LocalDate.parse(logDate);
+
+			sql.append(" AND log_time >= ? AND log_time < ?");
+
+			params.add(Timestamp.valueOf(date.atStartOfDay()));
+			params.add(Timestamp.valueOf(date.plusDays(1).atStartOfDay()));
+		}
+
+		sql.append(" ORDER BY log_time DESC");
+
+		// Apply pagination only when size is greater than 0
+		if (size > 0) {
+			sql.append(" LIMIT ? OFFSET ?");
+			params.add(size);
+			params.add(offset);
+		}
+
+		return jdbcTemplate.query(sql.toString(),
+				(rs, rowNum) -> ApplicationLogDTO.builder().id(rs.getLong("id")).logTime(rs.getTimestamp("log_time"))
+						.flow(rs.getString("flow")).flowType(rs.getString("flow_type"))
+						.logLevel(rs.getString("log_level")).message(rs.getString("message"))
+						.errorMessage(rs.getString("error_message")).build(),
+				params.toArray());
+	}
+
+	// Get distinct flow types for dropdown
+	public List<String> getFlowTypes() {
+
+		String sql = """
+				SELECT DISTINCT flow_type
+				FROM apache_application_logs
+				WHERE flow_type IS NOT NULL
+				ORDER BY flow_type
 				""";
 
-		return jdbcTemplate.query(sql,
-				(rs, rowNum) -> ApplicationLogDTO.builder().id(rs.getLong("id")).logTime(rs.getTimestamp("log_time"))
-						.product(rs.getString("product")).flowType(rs.getString("flow_type"))
-						.documentId(rs.getString("document_id")).logLevel(rs.getString("log_level"))
-						.message(rs.getString("message")).errorMessage(rs.getString("error_message")).build(),
-				size, offset);
+		return jdbcTemplate.queryForList(sql, String.class);
 	}
 
 }

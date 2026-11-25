@@ -115,7 +115,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 						+ "] Infra failure processing file ${header.CamelFileName} after retries exhausted: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-					loggerService.error("N/A", "N/A", "N/A",
+					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), "N/A", "N/A",
 							"Infrastructure failure (DB/network) processing file: " + fileName,
 							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
 				}).handled(false);
@@ -131,7 +131,8 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 								+ "] Validation failure for file ${header.CamelFileName}: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-					loggerService.error("N/A", "N/A", "N/A", "Validation failure processing file: " + fileName,
+					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), "N/A", "N/A",
+							"Validation failure processing file: " + fileName,
 							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
 				}).handled(false);
 
@@ -319,7 +320,6 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			 */
 			String[] cols = csvParser.parseCsvLine(row);
 			String documentNo = getColumnValue(headers, cols, identityColumn);
-			String productId = getColumnValue(headers, cols, identityColumn);
 			log.info(entity.getEntityName(), documentNo, "Started processing CSV file.");
 
 			try {
@@ -334,7 +334,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 					failedOrders.add(documentNo);
 					String errorMessage = String.join(" | ", validationErrors);
 					log.error("Validation failed for Row {} : {}", i + 2, errorMessage);
-					loggerService.error(productId, entity.getEntityName(), documentNo, "CSV Validation Failed",
+					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), entity.getEntityName(), documentNo, "CSV Validation Failed",
 							errorMessage);
 
 				} else {

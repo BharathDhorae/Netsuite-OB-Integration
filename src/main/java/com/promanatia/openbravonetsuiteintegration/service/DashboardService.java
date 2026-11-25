@@ -16,8 +16,13 @@ public class DashboardService {
 		this.applicationLogRepository = applicationLogRepository;
 	}
 
-	public List<ApplicationLogDTO> getApplicationLogs(int page, int size) {
+	public List<ApplicationLogDTO> getApplicationLogs(int page, int size, String flow, String flowType, String logLevel,
+			String logDate) {
 
-		return applicationLogRepository.findLogs(page, size);
+		return applicationLogRepository.findLogs(page, size, flow, flowType, logLevel, logDate);
+	}
+
+	public List<String> getFlowTypes() {
+		return applicationLogRepository.getFlowTypes();
 	}
 }
