@@ -1,10 +1,10 @@
-package com.promanatia.CamelDemo;
+package com.promanatia.openbravonetsuiteintegration;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class CamelDemoApplicationTests {
+class OpenbravoNetsuiteIntegrationApplicationTests {
 
 	@Test
 	void contextLoads() {

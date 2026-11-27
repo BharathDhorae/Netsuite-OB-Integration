@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.promanatia.openbravonetsuiteintegration.config.UserConfig;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class UserInitializer implements CommandLineRunner {
 
@@ -35,21 +38,21 @@ public class UserInitializer implements CommandLineRunner {
 				throw new IllegalArgumentException("Username and password cannot be empty");
 			}
 
-			Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE username = ?",
-					Integer.class, username);
+			Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE username = ?", Integer.class,
+					username);
 
 			if (count != null && count == 0) {
 
 				String encryptedPassword = passwordEncoder.encode(rawPassword);
 
-				jdbcTemplate.update("INSERT INTO users (username, password, active) " + "VALUES (?, ?, TRUE)",
-						username, encryptedPassword);
+				jdbcTemplate.update("INSERT INTO users (username, password, active) " + "VALUES (?, ?, TRUE)", username,
+						encryptedPassword);
 
-				System.out.println("User inserted successfully: " + username);
+				log.info("User inserted successfully: " + username);
 
 			} else {
 
-				System.out.println("User already exists, skipped: " + username);
+				log.info("User already exists, skipped: " + username);
 			}
 		}
 	}

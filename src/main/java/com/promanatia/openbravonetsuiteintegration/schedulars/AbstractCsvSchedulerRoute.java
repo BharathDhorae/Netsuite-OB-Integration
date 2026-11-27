@@ -115,7 +115,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 						+ "] Infra failure processing file ${header.CamelFileName} after retries exhausted: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), "N/A", "N/A",
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
 							"Infrastructure failure (DB/network) processing file: " + fileName,
 							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
 				}).handled(false);
@@ -131,7 +131,7 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 								+ "] Validation failure for file ${header.CamelFileName}: ${exception.message}")
 				.process(exchange -> {
 					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), "N/A", "N/A",
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
 							"Validation failure processing file: " + fileName,
 							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
 				}).handled(false);
@@ -143,7 +143,12 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				.log(LoggingLevel.ERROR,
 						"[" + getDirectionLabel()
 								+ "] Unhandled error processing file ${header.CamelFileName}: ${exception.message}")
-				.handled(false);
+				.process(exchange -> {
+					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
+							"Validation failure processing file: " + fileName, "[" + getDirectionLabel()
+									+ "] Unhandled error processing file ${header.CamelFileName}: ${exception.message}");
+				}).handled(false);
 
 		// =================================================================
 		// Reader: pulls files from this direction's own SFTP endpoint,
@@ -177,14 +182,23 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 	private void resolveEntityAndFileId(Exchange exchange) {
 
 		String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+
+		if (fileName == null || !fileName.contains("_")) {
+			throw new RowValidationException("Unexpected file name format: " + fileName);
+		}
+
+		String[] fileNameParts = fileName.split("_");
+
+		if (fileNameParts.length < 2 || fileNameParts[1].isEmpty() || !fileNameParts[1].endsWith(".csv")) {
+			throw new RowValidationException("Unexpected file name format: " + fileName);
+		}
+
 		String entityName = fileName.split("_")[1].replace(".csv", "");
 
 		// Deterministic per-file identifier for idempotent downstream writes.
 		// Reusing the source file name (not a random UUID) means a retried
 		// redelivery of THIS exchange always targets the same S3/SFTP key,
 		// so retries overwrite in place instead of creating a duplicate.
-		String fileId = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
-		exchange.setProperty("fileId", fileId);
 
 		EntityMasterDTO entity;
 		try {
@@ -222,6 +236,11 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
 			identityColumn = fieldMappingRepository.getIdentificationColumn(entity.getSourceTableName());
 
+			if (identityColumn == null) {
+				throw new RowValidationException(
+						"No identification column configured for " + entity.getSourceTableName());
+			}
+
 		} catch (Exception e) {
 			throw wrapAsInfrastructure("Failed to load field mappings for " + entity.getSourceTableName(), e);
 		}
@@ -235,10 +254,6 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 			 */
 			List<String[]> parsedRows = csvParser.parseCsv(fileContent);
 			csvValidatorService.validateFile(parsedRows);
-
-			if (parsedRows == null || parsedRows.isEmpty()) {
-				throw new RowValidationException("CSV file is empty");
-			}
 
 			/*
 			 * CSV header.
@@ -327,24 +342,23 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				/*
 				 * rowNum is +1 because original CSV has header at row 1.
 				 */
-				List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i + 1, row, mappings);
+				List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i + 1, mappings);
 
 				if (!validationErrors.isEmpty()) {
 
 					failedOrders.add(documentNo);
 					String errorMessage = String.join(" | ", validationErrors);
 					log.error("Validation failed for Row {} : {}", i + 2, errorMessage);
-					loggerService.error(getSourceFlowType()+" TO " +getTargetFlowType(), entity.getEntityName(), documentNo, "CSV Validation Failed",
-							errorMessage);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), entity.getEntityName(),
+							documentNo, "CSV Validation Failed", errorMessage);
 
 				} else {
-					log.info(entity.getEntityName(), documentNo, "Row {} validated successfully.", i + 2);
+					log.debug("[{}] Processing document {} (row {})", entity.getEntityName(), documentNo, i + 2);
 				}
 
 			} catch (Exception e) {
 
 				if (isInfrastructureFailure(e)) {
-					log.error("Infrastructure failure during row validation, aborting file: {}", e.getMessage());
 					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 2)
 							+ " of file for entity " + entity.getEntityName(), e);
 				}
@@ -395,7 +409,10 @@ public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
 				String mappedCsv = csvMappingService.generateMappedCsv(mappings, headers, validRows);
 				exchange.setProperty("mappedCsv", mappedCsv);
 			} catch (Exception e) {
-				throw wrapAsInfrastructure("Failed generating mapped CSV for " + entity.getSourceTableName(), e);
+				if (isInfrastructureFailure(e)) {
+					throw wrapAsInfrastructure("Failed generating mapped CSV for " + entity.getSourceTableName(), e);
+				}
+				throw new RowValidationException("Mapping failed: " + e.getMessage(), e);
 			}
 		}
 	}

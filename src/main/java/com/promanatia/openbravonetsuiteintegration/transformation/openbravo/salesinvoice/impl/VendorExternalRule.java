@@ -38,8 +38,13 @@ public class VendorExternalRule extends BaseLookupRule implements Transformation
 	protected OrgSubsidaryDto subsidiary(RowContext row, FieldMappingDTO mapping) {
 
 		if (row.getSubsidiaryDto() == null) {
-			row.setSubsidiaryDto(lookupService.getBySubsidiary(subsidiaryRule.transform(row, mapping),
-					businessPartner(row).getAksharpithSubsidary()));
+
+			OrgSubsidaryDto bp = businessPartner(row);
+			if (bp == null)
+				return null;
+
+			row.setSubsidiaryDto(
+					lookupService.getBySubsidiary(subsidiaryRule.transform(row, mapping), bp.getAksharpithSubsidary()));
 		}
 
 		return row.getSubsidiaryDto();

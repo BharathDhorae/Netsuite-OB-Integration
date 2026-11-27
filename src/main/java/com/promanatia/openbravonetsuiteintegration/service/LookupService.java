@@ -52,10 +52,13 @@ public class LookupService {
 			return null;
 		}
 
-		String key = subsidiary.trim() + "|" + (vendorSubsidiary == null ? "" : vendorSubsidiary.trim());
+		String trimmedSubsidiary = subsidiary.trim();
+		String trimmedVendorSubsidiary = vendorSubsidiary == null ? "" : vendorSubsidiary.trim();
+
+		String key = trimmedSubsidiary + "|" + trimmedVendorSubsidiary;
 
 		return subsidiaryCache.computeIfAbsent(key,
-				k -> orgRepository.findBySubsidiary(subsidiary.trim(), vendorSubsidiary.trim()));
+				k -> orgRepository.findBySubsidiary(trimmedSubsidiary, trimmedVendorSubsidiary));
 	}
 
 	public String getExternalInventoryLocation(String externalInventoryLocation) {
@@ -74,10 +77,13 @@ public class LookupService {
 			return null;
 		}
 
-		String key = subsidiary.trim() + "|" + (financialLocation == null ? "" : financialLocation.trim());
+		String trimmedSubsidiary = subsidiary.trim();
+		String trimmedFinancialLocation = financialLocation == null ? "" : financialLocation.trim();
+
+		String key = trimmedSubsidiary + "|" + trimmedFinancialLocation;
 
 		return orgWareouseBinAccountCache.computeIfAbsent(key,
-				k -> orgRepository.getOrgWarehousBinBySubsidiary(subsidiary.trim(), financialLocation.trim()));
+				k -> orgRepository.getOrgWarehousBinBySubsidiary(trimmedSubsidiary, trimmedFinancialLocation));
 	}
 
 	public String getTaxCategory(String externalId, String taxGroup) {
@@ -86,9 +92,13 @@ public class LookupService {
 			return null;
 		}
 
-		String key = externalId.trim() + "|" + (taxGroup == null ? "" : taxGroup.trim());
+		String trimmedExternalId = externalId.trim();
+		String trimmedTaxGroup = taxGroup == null ? "" : taxGroup.trim();
 
-		return orgTaxRuleCache.computeIfAbsent(key, k -> taxRateRepository.getTaxCategory(externalId.trim(), taxGroup));
+		String key = trimmedExternalId + "|" + trimmedTaxGroup;
+
+		return orgTaxRuleCache.computeIfAbsent(key,
+				k -> taxRateRepository.getTaxCategory(trimmedExternalId, trimmedTaxGroup));
 	}
 
 	public void clearCache() {

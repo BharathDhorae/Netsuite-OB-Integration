@@ -1,5 +1,7 @@
 package com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl;
 
+import java.util.Objects;
+
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
@@ -24,7 +26,7 @@ public class CustbodyInvoiceRule implements TransformationRule {
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 		String invoice = row.get("documentno");
 		String subsidiary = subsidiaryRule.transform(row, mapping);
-		return invoice + "-" + subsidiary;
+		return invoice + "-" + Objects.toString(subsidiary, "");
 	}
 
 }

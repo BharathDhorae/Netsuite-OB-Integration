@@ -1,6 +1,7 @@
 package com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl;
 
 import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
+import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
@@ -28,6 +29,16 @@ public abstract class BaseLookupRule {
 		}
 
 		return row.getBusinessPartner();
+	}
+
+	protected OrgWarehouseBinAccountDTO orgWarehouse(RowContext row) {
+
+		if (row.getOrgwarehouseAccountDto() == null) {
+			row.setOrgwarehouseAccountDto(
+					lookupService.getBankAccountBySubsidiary(row.get("Subsidiary"), row.get("Financial location")));
+		}
+
+		return row.getOrgwarehouseAccountDto();
 	}
 
 }

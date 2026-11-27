@@ -3,17 +3,16 @@ package com.promanatia.openbravonetsuiteintegration.transformation.netsuite.purc
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
-import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
+import com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl.BaseLookupRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class BusinessPartnerTaxCategoryRule implements TransformationRule {
-	private final LookupService lookupService;
+public class BusinessPartnerTaxCategoryRule extends BaseLookupRule implements TransformationRule {
 
 	public BusinessPartnerTaxCategoryRule(LookupService lookupService) {
-		this.lookupService = lookupService;
+		super(lookupService);
 	}
 
 	@Override
@@ -23,14 +22,8 @@ public class BusinessPartnerTaxCategoryRule implements TransformationRule {
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO = row.getOrgwarehouseAccountDto();
-
-		if (orgWarehouseBinAccountDTO == null) {
-			orgWarehouseBinAccountDTO = lookupService.getBankAccountBySubsidiary(row.get("Subsidiary"),
-					row.get("Financial location"));
-			row.setOrgwarehouseAccountDto(orgWarehouseBinAccountDTO);
-		}
-		return orgWarehouseBinAccountDTO == null ? "" : orgWarehouseBinAccountDTO.getBusinessPartnerTaxCategory();
+		var dto = orgWarehouse(row);
+		return dto == null ? "" : dto.getBusinessPartnerTaxCategory();
 
 	}
 

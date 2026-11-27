@@ -1,6 +1,7 @@
 package com.promanatia.openbravonetsuiteintegration.service;
 
 import com.promanatia.openbravonetsuiteintegration.dto.EntityMasterDTO;
+import com.promanatia.openbravonetsuiteintegration.exception.RowValidationException;
 import com.promanatia.openbravonetsuiteintegration.utility.FileNameGenerator;
 
 import org.apache.camel.Exchange;
@@ -21,7 +22,7 @@ public class SftpUploadService {
 		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
 
 		if (csv == null || csv.isBlank()) {
-			throw new RuntimeException("Mapped CSV is empty");
+			throw new RowValidationException("Mapped CSV is empty");
 		}
 
 		String fileName = fileNameGenerator.buildSuccessFileName(entity);

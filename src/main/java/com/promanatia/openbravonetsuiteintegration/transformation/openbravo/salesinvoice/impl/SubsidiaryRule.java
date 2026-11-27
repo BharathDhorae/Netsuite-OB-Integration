@@ -3,18 +3,15 @@ package com.promanatia.openbravonetsuiteintegration.transformation.openbravo.sal
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
-import com.promanatia.openbravonetsuiteintegration.dto.OrgSubsidaryDto;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class SubsidiaryRule implements TransformationRule {
-
-	private final LookupService lookupService;
+public class SubsidiaryRule extends BaseLookupRule implements TransformationRule {
 
 	public SubsidiaryRule(LookupService lookupService) {
-		this.lookupService = lookupService;
+		super(lookupService);
 	}
 
 	@Override
@@ -25,15 +22,7 @@ public class SubsidiaryRule implements TransformationRule {
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 
-		OrgSubsidaryDto dto = row.getOrganization();
-		if (dto == null) {
-			dto = lookupService.getOrganization(row.get("organization"));
-			row.setOrganization(dto);
-		}
-
-		if (dto == null) {
-			return "";
-		}
+		var dto = organization(row);
 
 		String documentNo = row.get("documentno");
 		if (documentNo.endsWith("A")) {

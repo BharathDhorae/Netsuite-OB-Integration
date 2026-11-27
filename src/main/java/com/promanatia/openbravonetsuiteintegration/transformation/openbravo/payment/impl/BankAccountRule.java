@@ -56,7 +56,7 @@ public class BankAccountRule implements TransformationRule {
 
 		// Find bank account using subsidiary and financial location
 		OrgWarehouseBinAccountDTO bankAccount = lookupService.getBankAccountBySubsidiary(subsidiary, financialLocation);
-		return bankAccount.getBanckAccount() != null ? bankAccount.getBanckAccount() : "";
+		return bankAccount == null || bankAccount.getBanckAccount() != null ? bankAccount.getBanckAccount() : "";
 	}
 
 }
