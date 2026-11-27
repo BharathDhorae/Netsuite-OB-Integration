@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
+import com.promanatia.openbravonetsuiteintegration.exception.RowValidationException;
 
 @Service
 public class CsvValidator {
@@ -13,24 +14,24 @@ public class CsvValidator {
 	public void validateFile(List<String[]> rows) {
 
 		if (rows == null || rows.isEmpty()) {
-			throw new RuntimeException("CSV file is empty");
+			throw new RowValidationException("CSV file is empty");
 		}
 
 		if (rows.size() <= 1) {
-			throw new RuntimeException("CSV file is empty or contains only header.");
+			throw new RowValidationException("CSV file is empty or contains only header.");
 		}
 
 		String[] header = rows.get(0);
 
 		if (header == null || header.length == 0) {
-			throw new RuntimeException("CSV header is missing");
+			throw new RowValidationException("CSV header is missing");
 		}
 	}
 
 	/**
 	 * Validate each row based on headers
 	 */
-	public List<String> validateRow(String[] columns, String[] headers, int rowNum, String row,
+	public List<String> validateRow(String[] columns, String[] headers, int rowNum,
 			List<FieldMappingDTO> fieldMappings) {
 
 		List<String> errors = new ArrayList<>();
@@ -82,18 +83,6 @@ public class CsvValidator {
 		return "Unknown Column";
 	}
 
-	/**
-	 * Safe column value fetch
-	 */
-	public String getColumnValue(String[] columns, int columnIndex) {
-
-		if (columns == null || columnIndex >= columns.length || columns[columnIndex] == null) {
-			return "";
-		}
-
-		return columns[columnIndex].trim();
-	}
-
 	public boolean isEmpty(String value) {
 
 		if (value == null) {
@@ -115,7 +104,7 @@ public class CsvValidator {
 
 		if (headers == null || headers.length == 0 || headers.length != fieldMappings.size()) {
 
-			throw new RuntimeException("CSV header is missing or empty");
+			throw new RowValidationException("CSV header is missing or empty");
 		}
 
 		for (int i = 0; i < headers.length; i++) {
@@ -124,12 +113,12 @@ public class CsvValidator {
 			String mappingColumn = normalizeHeader(fieldMappings.get(i).getSourceColumn());
 
 			if (csvHeader.isEmpty()) {
-				throw new RuntimeException("Empty header found at column index: " + i);
+				throw new RowValidationException("Empty header found at column index: " + i);
 			}
 
 			if (!csvHeader.equalsIgnoreCase(mappingColumn)) {
-				throw new RuntimeException("Header column mismatch at index " + i + ". CSV header = [" + csvHeader + "]"
-						+ ", Mapping column = [" + mappingColumn + "]");
+				throw new RowValidationException("Header column mismatch at index " + i + ". CSV header = [" + csvHeader
+						+ "]" + ", Mapping column = [" + mappingColumn + "]");
 			}
 		}
 	}

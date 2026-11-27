@@ -2,6 +2,8 @@ package com.promanatia.openbravonetsuiteintegration.transformation.openbravo.sal
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
@@ -31,10 +33,9 @@ public class DueDateRule implements TransformationRule {
 
 		String paymentTerm = row.get("PaymentTerms");
 		if (!paymentTerm.isBlank()) {
-			String days = paymentTerm.replaceAll("[^0-9]", "");
-
-			if (!days.isBlank()) {
-				dueDate = dueDate.plusDays(Integer.parseInt(days));
+			Matcher m = Pattern.compile("\\d+").matcher(paymentTerm);
+			if (m.find()) {
+				dueDate = dueDate.plusDays(Integer.parseInt(m.group()));
 			}
 		}
 		return dueDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));

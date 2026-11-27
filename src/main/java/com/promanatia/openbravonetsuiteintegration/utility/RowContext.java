@@ -26,7 +26,7 @@ public class RowContext {
 
 	private OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO;
 
-	private String taxRule;;
+	private String taxRule;
 
 	public RowContext(String[] headers, String[] columns) {
 

@@ -15,11 +15,6 @@ public class TransformationUtil {
 		this.factory = factory;
 	}
 
-	public RowContext createContext(String[] headers, String[] columns) {
-
-		return new RowContext(headers, columns);
-	}
-
 	public String applyTransformation(RowContext row, FieldMappingDTO mapping) {
 
 		String ruleCode = mapping.getTransformationRuleCode();

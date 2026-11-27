@@ -59,6 +59,7 @@ public class FieldMappingRepository {
 				  AND identification_primary_column = 'Y'
 				  AND active = 'Y'
 				ORDER BY sequence_no
+				LIMIT 1
 				""";
 
 		try {

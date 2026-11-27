@@ -1,9 +1,12 @@
+
 package com.promanatia.openbravonetsuiteintegration.config;
 
 import static org.apache.camel.builder.endpoint.StaticEndpointBuilders.sftp;
 
 import org.apache.camel.builder.EndpointConsumerBuilder;
 import org.apache.camel.builder.EndpointProducerBuilder;
+import org.apache.camel.builder.endpoint.dsl.SftpEndpointBuilderFactory.SftpEndpointBuilder;
+import org.apache.camel.component.file.GenericFileExist;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,12 +25,15 @@ public class SftpConfig {
 	@Value("${sftp.password}")
 	private String password;
 
+	@Value("${sftp.known-hosts-file}")
+	private String knownHostsPath;
+
 	@Value("${sftp.include}")
 	private String include;
 
 	@Value("${sftp.ob.netsuite.delay}")
 	private long obToNetsuiteDelay;
-	
+
 	@Value("${sftp.netsuite.ob.delay}")
 	private long netsuiteToOBDelay;
 
@@ -55,31 +61,59 @@ public class SftpConfig {
 	@Value("${sftp.netsuite.ob.indirectory}")
 	private String inNetsuiteToOBDirectory;
 
+	@Value("${error-notification.poll-delay:60000}")
+	private long errorNotificationDelay;
+
+	// Common SFTP configuration with SSH host-key verification
+	private SftpEndpointBuilder base(String directory) {
+		return sftp(host + ":" + port + directory).username(username).password(password).strictHostKeyChecking("yes")
+				.knownHostsFile(knownHostsPath);
+	}
+
+	// OB to NetSuite consumer
 	public EndpointConsumerBuilder getObToNetsuiteSftpEndpoint() {
-		return sftp(host + ":" + port + outOBtoNetsuiteDirectory).username(username).password(password).include(include)
-				.delay(obToNetsuiteDelay).move(archiveOBtoNetsuiteDirectory + "/${file:name}")
+		return base(outOBtoNetsuiteDirectory).include(include).delay(obToNetsuiteDelay)
+				.move(archiveOBtoNetsuiteDirectory + "/${file:name}")
 				.moveFailed(errorOBtoNetsuiteDirectory + "/${file:name}").readLock("changed");
 	}
 
+	// NetSuite to OB consumer
 	public EndpointConsumerBuilder getNetsuiteToObSftpEndpoint() {
-		return sftp(host + ":" + port + outNetsuiteToOBDirectory).username(username).password(password).include(include)
-				.delay(netsuiteToOBDelay).move(archiveNetsuiteToOBDirectory + "/${file:name}")
+		return base(outNetsuiteToOBDirectory).include(include).delay(netsuiteToOBDelay)
+				.move(archiveNetsuiteToOBDirectory + "/${file:name}")
 				.moveFailed(errorNetsuiteToOBDirectory + "/${file:name}").readLock("changed");
 	}
 
+	// OB error notification consumer
+	public EndpointConsumerBuilder getObToNetsuiteErrorNotificationEndpoint() {
+		return base(errorOBtoNetsuiteDirectory).include("(?i).*\\.csv").delay(errorNotificationDelay)
+				.readLock("changed");
+	}
+
+	// NetSuite error notification consumer
+	public EndpointConsumerBuilder getNetsuiteToObErrorNotificationEndpoint() {
+		return base(errorNetsuiteToOBDirectory).include("(?i).*\\.csv").delay(errorNotificationDelay)
+				.readLock("changed");
+	}
+
+	// OB error producer
 	public EndpointProducerBuilder getObToNetsuiteErrorSftpEndpoint() {
-		return sftp(host + ":" + port + errorOBtoNetsuiteDirectory).username(username).password(password).binary(true);
+		return base(errorOBtoNetsuiteDirectory).binary(true).fileExist(GenericFileExist.Fail);
 	}
 
+	// NetSuite error producer
 	public EndpointProducerBuilder getNetsuiteToObErrorSftpEndpoint() {
-		return sftp(host + ":" + port + errorNetsuiteToOBDirectory).username(username).password(password).binary(true);
+		return base(errorNetsuiteToOBDirectory).binary(true).fileExist(GenericFileExist.Fail);
 	}
 
+	// OB input producer
 	public EndpointProducerBuilder getObToNetsuiteInSftpEndpoint() {
-		return sftp(host + ":" + port + inOBtoNetsuiteDirectory).username(username).password(password).binary(true);
+		return base(inOBtoNetsuiteDirectory).binary(true).fileExist(GenericFileExist.Fail);
 	}
 
+	// NetSuite input producer
 	public EndpointProducerBuilder getNetsuiteToObInSftpEndpoint() {
-		return sftp(host + ":" + port + inNetsuiteToOBDirectory).username(username).password(password).binary(true);
+		return base(inNetsuiteToOBDirectory).binary(true).fileExist(GenericFileExist.Fail);
 	}
+
 }

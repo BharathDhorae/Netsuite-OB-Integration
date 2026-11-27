@@ -12,6 +12,8 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 
+import com.promanatia.openbravonetsuiteintegration.exception.RowValidationException;
+
 @Component
 public class CsvParser {
 
@@ -45,7 +47,7 @@ public class CsvParser {
 			return new String[0];
 
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to parse CSV record", e);
+			throw new RowValidationException("Failed to parse CSV record", e);
 		}
 	}
 
@@ -80,7 +82,7 @@ public class CsvParser {
 			return rows;
 
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to parse CSV content", e);
+			throw new RowValidationException("Failed to parse CSV content", e);
 		}
 	}
 
@@ -110,40 +112,7 @@ public class CsvParser {
 			return result;
 
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to convert CSV record", e);
-		}
-	}
-
-	/**
-	 * Parse complete CSV content and return records as valid CSV strings.
-	 *
-	 * Header is included.
-	 */
-	public List<String> parseCsvRecords(String content) {
-
-		List<String> records = new ArrayList<>();
-
-		if (content == null || content.isEmpty()) {
-			return records;
-		}
-
-		try (CSVParser parser = CSVParser.parse(new StringReader(content), CSV_FORMAT)) {
-
-			for (CSVRecord record : parser) {
-
-				String[] values = new String[record.size()];
-
-				for (int i = 0; i < record.size(); i++) {
-					values[i] = record.get(i);
-				}
-
-				records.add(toCsvRecord(values));
-			}
-
-			return records;
-
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to parse CSV records", e);
+			throw new RowValidationException("Failed to convert CSV record", e);
 		}
 	}
 }

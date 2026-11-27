@@ -3,18 +3,16 @@ package com.promanatia.openbravonetsuiteintegration.transformation.netsuite.purc
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
-import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
+import com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl.BaseLookupRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class PriceListRule implements TransformationRule {
-
-	private final LookupService lookupService;
+public class PriceListRule extends BaseLookupRule implements TransformationRule {
 
 	public PriceListRule(LookupService lookupService) {
-		this.lookupService = lookupService;
+		super(lookupService);
 	}
 
 	@Override
@@ -24,17 +22,10 @@ public class PriceListRule implements TransformationRule {
 
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
-		OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO = row.getOrgwarehouseAccountDto();
-
-		if (orgWarehouseBinAccountDTO == null) {
-			orgWarehouseBinAccountDTO = lookupService.getBankAccountBySubsidiary(row.get("Subsidiary"),
-					row.get("Financial location"));
-			row.setOrgwarehouseAccountDto(orgWarehouseBinAccountDTO);
-		}
-		return orgWarehouseBinAccountDTO == null ? ""
-				: mapping.getEntityName().equalsIgnoreCase("PurchaseOrder")
-						? orgWarehouseBinAccountDTO.getPurchaseOrderPriceList()
-						: orgWarehouseBinAccountDTO.getSalesOrderPriceList();
+		var dto = orgWarehouse(row);
+		return dto == null ? ""
+				: "PurchaseOrder".equalsIgnoreCase(mapping.getEntityName()) ? dto.getPurchaseOrderPriceList()
+						: dto.getSalesOrderPriceList();
 
 	}
 

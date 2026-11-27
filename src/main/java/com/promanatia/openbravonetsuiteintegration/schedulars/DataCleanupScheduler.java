@@ -1,6 +1,5 @@
 package com.promanatia.openbravonetsuiteintegration.schedulars;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,8 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class DataCleanupScheduler {
 
-	@Autowired
 	private ApplicationLogRepository repository;
+
+	public DataCleanupScheduler(ApplicationLogRepository repository) {
+		this.repository = repository;
+	}
 
 	@Value("${log.cleanup.retention-days}")
 	private int retentionDays;

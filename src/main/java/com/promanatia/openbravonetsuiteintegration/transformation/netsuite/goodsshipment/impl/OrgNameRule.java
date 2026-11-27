@@ -3,18 +3,16 @@ package com.promanatia.openbravonetsuiteintegration.transformation.netsuite.good
 import org.springframework.stereotype.Component;
 
 import com.promanatia.openbravonetsuiteintegration.dto.FieldMappingDTO;
-import com.promanatia.openbravonetsuiteintegration.dto.OrgWarehouseBinAccountDTO;
 import com.promanatia.openbravonetsuiteintegration.service.LookupService;
 import com.promanatia.openbravonetsuiteintegration.transformation.TransformationRule;
+import com.promanatia.openbravonetsuiteintegration.transformation.openbravo.salesinvoice.impl.BaseLookupRule;
 import com.promanatia.openbravonetsuiteintegration.utility.RowContext;
 
 @Component
-public class OrgNameRule implements TransformationRule {
-
-	private final LookupService lookupService;
+public class OrgNameRule extends BaseLookupRule implements TransformationRule {
 
 	private OrgNameRule(LookupService lookupService) {
-		this.lookupService = lookupService;
+		super(lookupService);
 	}
 
 	@Override
@@ -25,14 +23,8 @@ public class OrgNameRule implements TransformationRule {
 	@Override
 	public String transform(RowContext row, FieldMappingDTO mapping) {
 
-		OrgWarehouseBinAccountDTO orgWarehouseBinAccountDTO = row.getOrgwarehouseAccountDto();
-
-		if (orgWarehouseBinAccountDTO == null) {
-			orgWarehouseBinAccountDTO = lookupService.getBankAccountBySubsidiary(row.get("Subsidiary"),
-					row.get("Financial location"));
-			row.setOrgwarehouseAccountDto(orgWarehouseBinAccountDTO);
-		}
-		return orgWarehouseBinAccountDTO == null ? "" : orgWarehouseBinAccountDTO.getOrganization();
+		var dto = orgWarehouse(row);
+		return dto == null ? "" : dto.getOrganization();
 	}
 
 }
