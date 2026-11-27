@@ -1,0 +1,50 @@
+package com.promantia.openbravonetsuiteintegration.service;
+
+import com.promantia.openbravonetsuiteintegration.dto.EntityMasterDTO;
+import com.promantia.openbravonetsuiteintegration.exception.RowValidationException;
+import com.promantia.openbravonetsuiteintegration.utility.FileNameGenerator;
+
+import org.apache.camel.Exchange;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SftpUploadService {
+
+	private final FileNameGenerator fileNameGenerator;
+
+	public SftpUploadService(FileNameGenerator fileNameGenerator) {
+		this.fileNameGenerator = fileNameGenerator;
+	}
+
+	public void uploadSuccessFile(Exchange exchange) {
+
+		String csv = exchange.getProperty("mappedCsv", String.class);
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+
+		if (csv == null || csv.isBlank()) {
+			throw new RowValidationException("Mapped CSV is empty");
+		}
+
+		String fileName = fileNameGenerator.buildSuccessFileName(entity);
+		exchange.getIn().setBody(csv);
+		exchange.getIn().setHeader("CamelFileName", fileName);
+	}
+
+	public void uploadErrorFile(Exchange exchange) {
+
+		String errorCsv = exchange.getProperty("errorCsv", String.class);
+		Boolean hasFailed = exchange.getProperty("hasFailedOrders", Boolean.class);
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+		if (hasFailed == null || !hasFailed || errorCsv == null || errorCsv.isBlank()) {
+			return;
+		}
+
+		String fileName = exchange.getProperty("ERROR_FILE_NAME", String.class);
+		if (fileName == null) {
+			fileName = fileNameGenerator.buildErrorFileName(entity);
+		}
+
+		exchange.getIn().setBody(errorCsv);
+		exchange.getIn().setHeader("CamelFileName", fileName);
+	}
+}

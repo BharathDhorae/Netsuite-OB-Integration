@@ -1,0 +1,455 @@
+package com.promantia.openbravonetsuiteintegration.schedulars;
+
+import com.promantia.openbravonetsuiteintegration.dto.EntityMasterDTO;
+import com.promantia.openbravonetsuiteintegration.dto.FieldMappingDTO;
+import com.promantia.openbravonetsuiteintegration.exception.InfrastructureException;
+import com.promantia.openbravonetsuiteintegration.exception.RowValidationException;
+import com.promantia.openbravonetsuiteintegration.repository.EntityMasterRepository;
+import com.promantia.openbravonetsuiteintegration.repository.FieldMappingRepository;
+import com.promantia.openbravonetsuiteintegration.service.*;
+import com.promantia.openbravonetsuiteintegration.utility.CsvParser;
+import com.promantia.openbravonetsuiteintegration.utility.CsvValidator;
+
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.EndpointConsumerBuilder;
+import org.apache.camel.builder.EndpointProducerBuilder;
+import org.apache.camel.builder.RouteBuilder;
+import org.springframework.dao.DataAccessException;
+
+/**
+ * Everything that is identical between the two directional schedulers (OB ->
+ * NetSuite and NetSuite -> OB) lives here: the exception-handling policy, the
+ * CSV parse/validate/map steps, and small helpers.
+ *
+ * Each concrete subclass supplies only the direction-specific wiring: which
+ * SFTP endpoint to read from, which direct: URI its own private pipeline runs
+ * on, which SFTP endpoints to write success/error output to, and which FlowType
+ * pair to use for the entity lookup.
+ *
+ * Because each subclass owns its own direct: URI and therefore its own
+ * route/aggregator instance, the two directions no longer need to be correlated
+ * on flowDirection — each one's completionSize/Timeout batch is naturally
+ * isolated from the other's.
+ */
+@Slf4j
+public abstract class AbstractCsvSchedulerRoute extends RouteBuilder {
+
+	protected final CsvValidator csvValidatorService;
+	protected final CsvMappingService csvMappingService;
+	protected final ErrorCsvService errorCsvService;
+	protected final ApplicationLoggerService loggerService;
+	protected final SftpUploadService sftpUploadService;
+	protected final CsvParser csvParser;
+	protected final FieldMappingRepository fieldMappingRepository;
+	protected final EntityMasterRepository entityMasterRepository;
+	protected final LookupService lookupService;
+
+	protected AbstractCsvSchedulerRoute(CsvValidator csvValidatorService, CsvMappingService csvMappingService,
+			ErrorCsvService errorCsvService, ApplicationLoggerService loggerService,
+			SftpUploadService sftpUploadService, CsvParser csvParser, FieldMappingRepository fieldMappingRepository,
+			EntityMasterRepository entityMasterRepository, LookupService lookupService) {
+
+		this.csvValidatorService = csvValidatorService;
+		this.csvMappingService = csvMappingService;
+		this.errorCsvService = errorCsvService;
+		this.loggerService = loggerService;
+		this.sftpUploadService = sftpUploadService;
+		this.csvParser = csvParser;
+		this.fieldMappingRepository = fieldMappingRepository;
+		this.entityMasterRepository = entityMasterRepository;
+		this.lookupService = lookupService;
+	}
+
+	// -----------------------------------------------------------------
+	// Direction-specific hooks each subclass must provide.
+	// -----------------------------------------------------------------
+
+	/** SFTP endpoint this scheduler reads incoming files from. */
+	protected abstract EndpointConsumerBuilder getSourceSftpEndpoint();
+
+	/**
+	 * Unique direct: URI for this scheduler's own private pipeline (must not
+	 * collide with the other scheduler's).
+	 */
+	protected abstract String getProcessingDirectUri();
+
+	/** SFTP endpoint the mapped/valid output CSV is written to. */
+	protected abstract EndpointProducerBuilder getSuccessOutputSftpEndpoint();
+
+	/** SFTP endpoint the error CSV is written to. */
+	protected abstract EndpointProducerBuilder getErrorOutputSftpEndpoint();
+
+	/** FlowType (as string) of the source system, used for the entity lookup. */
+	protected abstract String getSourceFlowType();
+
+	/** FlowType (as string) of the target system, used for the entity lookup. */
+	protected abstract String getTargetFlowType();
+
+	/** Short label used for routeIds and logging, e.g. "OB_TO_NETSUITE". */
+	protected abstract String getDirectionLabel();
+
+	@Override
+	public void configure() {
+
+		// ---------------------------------------------------------------
+		// 1) Infrastructure failures (DB down, S3 down, network timeout):
+		// retry with backoff. If retries are exhausted, the exchange
+		// remains failed (handled=false) so the SFTP consumer's own
+		// moveFailed=errorDirectory kicks in automatically — no manual
+		// file tracking needed since each file is its own exchange.
+		// ---------------------------------------------------------------
+		onException(InfrastructureException.class).maximumRedeliveries(3).redeliveryDelay(5000).backOffMultiplier(2.0)
+				.retryAttemptedLogLevel(LoggingLevel.WARN).logExhausted(true)
+				.log(LoggingLevel.ERROR, "[" + getDirectionLabel()
+						+ "] Infra failure processing file ${header.CamelFileName} after retries exhausted: ${exception.message}")
+				.process(exchange -> {
+					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
+							"Infrastructure failure (DB/network) processing file: " + fileName,
+							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
+				}).handled(false);
+
+		// ---------------------------------------------------------------
+		// 2) File-level data validation failures that make the whole file
+		// unusable (bad header, unknown entity, etc). Not retried —
+		// exchange stays failed so moveFailed=errorDirectory applies.
+		// ---------------------------------------------------------------
+		onException(RowValidationException.class)
+				.log(LoggingLevel.WARN,
+						"[" + getDirectionLabel()
+								+ "] Validation failure for file ${header.CamelFileName}: ${exception.message}")
+				.process(exchange -> {
+					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
+							"Validation failure processing file: " + fileName,
+							exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class).getMessage());
+				}).handled(false);
+
+		// ---------------------------------------------------------------
+		// 3) Anything else unexpected: log fully, do not silently swallow.
+		// ---------------------------------------------------------------
+		onException(Exception.class)
+				.log(LoggingLevel.ERROR,
+						"[" + getDirectionLabel()
+								+ "] Unhandled error processing file ${header.CamelFileName}: ${exception.message}")
+				.process(exchange -> {
+					String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), "N/A", "N/A",
+							"Validation failure processing file: " + fileName, "[" + getDirectionLabel()
+									+ "] Unhandled error processing file ${header.CamelFileName}: ${exception.message}");
+				}).handled(false);
+
+		// =================================================================
+		// Reader: pulls files from this direction's own SFTP endpoint,
+		// resolves the entity, then hands off to this scheduler's OWN
+		// private processing pipeline.
+		// =================================================================
+		from(getSourceSftpEndpoint()).routeId(getDirectionLabel() + "-sftp-reader")
+				.process(this::resolveEntityAndFileId).to(getProcessingDirectUri());
+
+		// =================================================================
+		// Pipeline: parsing/validation/mapping logic. Runs on this
+		// scheduler's own direct: URI/route, so its completionSize /
+		// completionTimeout batch is isolated from the other direction.
+		// =================================================================
+		from(getProcessingDirectUri()).routeId(getDirectionLabel() + "-csv-processor")
+
+				.convertBodyTo(String.class).process(exchange -> lookupService.clearCache())
+				.process(this::validateFileAndHeaders).process(this::validateRows).process(this::generateMappedCsv)
+
+				.choice().when(simple("${exchangeProperty.validRows.size} > 0"))
+				.process(sftpUploadService::uploadSuccessFile).to(getSuccessOutputSftpEndpoint()).end()
+
+				.choice().when(simple("${exchangeProperty.errorRows.size} > 0"))
+				.process(errorCsvService::generateErrorCsv).process(sftpUploadService::uploadErrorFile)
+				.to(getErrorOutputSftpEndpoint()).end();
+	}
+
+	// ---------------------------------------------------------------------
+	// Resolves the entity for this direction and sets the deterministic fileId.
+	// ---------------------------------------------------------------------
+	private void resolveEntityAndFileId(Exchange exchange) {
+
+		String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
+
+		if (fileName == null || !fileName.contains("_")) {
+			throw new RowValidationException("Unexpected file name format: " + fileName);
+		}
+
+		String[] fileNameParts = fileName.split("_");
+
+		if (fileNameParts.length < 2 || fileNameParts[1].isEmpty() || !fileNameParts[1].endsWith(".csv")) {
+			throw new RowValidationException("Unexpected file name format: " + fileName);
+		}
+
+		String entityName = fileName.split("_")[1].replace(".csv", "");
+
+		// Deterministic per-file identifier for idempotent downstream writes.
+		// Reusing the source file name (not a random UUID) means a retried
+		// redelivery of THIS exchange always targets the same S3/SFTP key,
+		// so retries overwrite in place instead of creating a duplicate.
+
+		EntityMasterDTO entity;
+		try {
+			entity = entityMasterRepository.findByEntityName(entityName, getSourceFlowType(), getTargetFlowType());
+		} catch (Exception e) {
+			// DB lookup blew up (connection refused, timeout, etc.) — infra issue.
+			throw wrapAsInfrastructure("Entity lookup failed for " + entityName, e);
+		}
+
+		if (entity == null) {
+			// DB responded fine, there's just no such entity — that's bad data.
+			throw new RowValidationException("No entity mapping found for entity name: " + entityName + " (direction: "
+					+ getDirectionLabel() + ")");
+		}
+
+		exchange.setProperty("entity", entity);
+		exchange.setProperty("entityName", entity.getEntityName());
+		log.info("Started processing file [{}] direction [{}]", fileName, getDirectionLabel());
+	}
+
+	// ---------------------------------------------------------------------
+	// Shared step: file-level + header validation.
+	// ---------------------------------------------------------------------
+	@SuppressWarnings("unchecked")
+	private void validateFileAndHeaders(Exchange exchange) {
+
+		String fileContent = exchange.getIn().getBody(String.class);
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+
+		List<FieldMappingDTO> mappings;
+		String identityColumn;
+
+		try {
+
+			mappings = fieldMappingRepository.getMappings(entity.getSourceTableName());
+			identityColumn = fieldMappingRepository.getIdentificationColumn(entity.getSourceTableName());
+
+			if (identityColumn == null) {
+				throw new RowValidationException(
+						"No identification column configured for " + entity.getSourceTableName());
+			}
+
+		} catch (Exception e) {
+			throw wrapAsInfrastructure("Failed to load field mappings for " + entity.getSourceTableName(), e);
+		}
+
+		try {
+
+			/*
+			 * Parse the COMPLETE CSV.
+			 *
+			 * Never split CSV by newline.
+			 */
+			List<String[]> parsedRows = csvParser.parseCsv(fileContent);
+			csvValidatorService.validateFile(parsedRows);
+
+			/*
+			 * CSV header.
+			 */
+			String[] headers = parsedRows.get(0);
+
+			/*
+			 * Validate file.
+			 */
+			if (parsedRows.size() <= 1) {
+				throw new RowValidationException("CSV file is empty or contains only header.");
+			}
+
+			/*
+			 * Validate header.
+			 */
+			csvValidatorService.validateHeader(headers, mappings);
+
+			/*
+			 * Convert data records back to COMPLETE CSV records.
+			 *
+			 * This preserves multiline quoted fields.
+			 */
+			List<String> rows = new ArrayList<>();
+
+			for (int i = 1; i < parsedRows.size(); i++) {
+				String[] row = parsedRows.get(i);
+				if (row == null || row.length == 0) {
+					continue;
+				}
+				rows.add(csvParser.toCsvRecord(row));
+			}
+
+			log.info("[{}] Header validation successful. Total data rows: {}", entity.getEntityName(), rows.size());
+
+			exchange.setProperty("mappings", mappings);
+			exchange.setProperty("identityColumn", identityColumn);
+			exchange.setProperty("headers", headers);
+			exchange.setProperty("rows", rows);
+
+		} catch (InfrastructureException ie) {
+			throw ie;
+
+		} catch (RowValidationException e) {
+			throw e;
+
+		} catch (Exception e) {
+			throw new RowValidationException(
+					"File/header validation failed for file " + entity.getEntityName() + ": " + e.getMessage(), e);
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// Shared step: per-row validation, splitting rows into valid/error sets.
+	// ---------------------------------------------------------------------
+	@SuppressWarnings("unchecked")
+	private void validateRows(Exchange exchange) {
+
+		List<String> rows = exchange.getProperty("rows", List.class);
+		String[] headers = exchange.getProperty("headers", String[].class);
+
+		List<String> validRows = new ArrayList<>();
+		List<String> errorRows = new ArrayList<>();
+		Set<String> failedOrders = new HashSet<>();
+
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+		List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
+		String identityColumn = exchange.getProperty("identityColumn", String.class);
+
+		for (int i = 0; i < rows.size(); i++) {
+
+			String row = rows.get(i);
+			if (row == null || row.isBlank()) {
+				continue;
+			}
+
+			/*
+			 * Parse the COMPLETE CSV record.
+			 */
+			String[] cols = csvParser.parseCsvLine(row);
+			String documentNo = getColumnValue(headers, cols, identityColumn);
+			log.info(entity.getEntityName(), documentNo, "Started processing CSV file.");
+
+			try {
+
+				/*
+				 * rowNum is +1 because original CSV has header at row 1.
+				 */
+				List<String> validationErrors = csvValidatorService.validateRow(cols, headers, i + 1, mappings);
+
+				if (!validationErrors.isEmpty()) {
+
+					failedOrders.add(documentNo);
+					String errorMessage = String.join(" | ", validationErrors);
+					log.error("Validation failed for Row {} : {}", i + 2, errorMessage);
+					loggerService.error(getSourceFlowType() + " TO " + getTargetFlowType(), entity.getEntityName(),
+							documentNo, "CSV Validation Failed", errorMessage);
+
+				} else {
+					log.debug("[{}] Processing document {} (row {})", entity.getEntityName(), documentNo, i + 2);
+				}
+
+			} catch (Exception e) {
+
+				if (isInfrastructureFailure(e)) {
+					throw wrapAsInfrastructure("Infrastructure failure validating row " + (i + 2)
+							+ " of file for entity " + entity.getEntityName(), e);
+				}
+
+				throw e;
+			}
+		}
+
+		/*
+		 * Build valid/error rows.
+		 *
+		 * IMPORTANT: We keep the COMPLETE CSV record.
+		 */
+		for (String row : rows) {
+
+			if (row == null || row.isBlank()) {
+				continue;
+			}
+
+			String[] cols = csvParser.parseCsvLine(row);
+			String documentNo = getColumnValue(headers, cols, identityColumn);
+
+			if (failedOrders.contains(documentNo)) {
+				errorRows.add(row);
+			} else {
+				validRows.add(row);
+			}
+		}
+
+		exchange.setProperty("validRows", validRows);
+		exchange.setProperty("errorRows", errorRows);
+		exchange.setProperty("failedOrders", failedOrders);
+	}
+
+	// ---------------------------------------------------------------------
+	// Shared step: builds the mapped CSV for valid rows only.
+	// ---------------------------------------------------------------------
+	@SuppressWarnings("unchecked")
+	private void generateMappedCsv(Exchange exchange) {
+
+		EntityMasterDTO entity = exchange.getProperty("entity", EntityMasterDTO.class);
+		String[] headers = exchange.getProperty("headers", String[].class);
+		List<String> validRows = exchange.getProperty("validRows", List.class);
+		List<FieldMappingDTO> mappings = exchange.getProperty("mappings", List.class);
+
+		if (validRows != null && !validRows.isEmpty()) {
+			try {
+				String mappedCsv = csvMappingService.generateMappedCsv(mappings, headers, validRows);
+				exchange.setProperty("mappedCsv", mappedCsv);
+			} catch (Exception e) {
+				if (isInfrastructureFailure(e)) {
+					throw wrapAsInfrastructure("Failed generating mapped CSV for " + entity.getSourceTableName(), e);
+				}
+				throw new RowValidationException("Mapping failed: " + e.getMessage(), e);
+			}
+		}
+	}
+
+	private InfrastructureException wrapAsInfrastructure(String message, Exception cause) {
+		return new InfrastructureException(message, cause);
+	}
+
+	/**
+	 * Heuristic to distinguish "the system is broken" from "the data is wrong".
+	 * Extend this as you find more infra-related exception types in your stack
+	 * (e.g. AWS SDK client exceptions, specific driver exceptions).
+	 */
+	private boolean isInfrastructureFailure(Throwable e) {
+		Throwable current = e;
+		while (current != null) {
+			if (current instanceof SQLException || current instanceof DataAccessException
+					|| current instanceof SocketTimeoutException || current instanceof IOException) {
+				return true;
+			}
+			String className = current.getClass().getName();
+			if (className.contains("ConnectException") || className.contains("UnknownHostException")) {
+				return true;
+			}
+			current = current.getCause();
+		}
+		return false;
+	}
+
+	private String getColumnValue(String[] headers, String[] cols, String columnName) {
+
+		for (int i = 0; i < headers.length; i++) {
+			if (headers[i].equalsIgnoreCase(columnName)) {
+				return i < cols.length ? cols[i].replace("\"", "").trim() : "";
+			}
+		}
+
+		return "";
+	}
+}
